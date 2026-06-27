@@ -4,8 +4,8 @@ const DATA_FILES = {
   ExternalIncome: "data/ExternalIncome.json"
 };
 
-const ACCESS_PASSWORD_HASH = "b632d38468726dbea21bc052d99c690cf9e41fa9ba899640175bebf1e8cacf18";
-const ACCESS_KEY = "tutoring.accessGranted";
+const ENCRYPTED_DATA_FILE = "data/encrypted-data.json";
+const ACCESS_PASSWORD_HASH = "aad64e9fbc792d72f50eff2f1d042e95019073c256981ad8eff7cdecc61f8935";
 
 const CACHE_KEYS = {
   Lessons: "tutoring.lessons",
@@ -20,7 +20,8 @@ const state = {
   selectedMonth: "",
   activeView: "dashboardView",
   searchText: "",
-  dataLoaded: false
+  dataLoaded: false,
+  accessPassword: ""
 };
 
 const moneyFormatter = new Intl.NumberFormat("zh-Hant-TW", {
@@ -42,9 +43,7 @@ const shortDateFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindEvents();
-  if (updateLockState()) {
-    await initializeApp();
-  }
+  updateLockState();
 });
 
 function bindEvents() {
@@ -90,7 +89,7 @@ async function unlockApp(event) {
     return;
   }
 
-  sessionStorage.setItem(ACCESS_KEY, "true");
+  state.accessPassword = input.value;
   input.value = "";
   error.hidden = true;
   if (updateLockState()) {
@@ -99,12 +98,18 @@ async function unlockApp(event) {
 }
 
 function lockApp() {
-  sessionStorage.removeItem(ACCESS_KEY);
+  state.accessPassword = "";
+  state.dataLoaded = false;
+  state.lessons = [];
+  state.studentDefaults = [];
+  state.externalIncome = [];
+  state.selectedMonth = "";
+  render();
   updateLockState();
 }
 
 function updateLockState() {
-  const isUnlocked = sessionStorage.getItem(ACCESS_KEY) === "true";
+  const isUnlocked = Boolean(state.accessPassword);
   document.body.classList.toggle("locked", !isUnlocked);
   document.getElementById("lockScreen").hidden = isUnlocked;
   document.querySelector(".app-shell").setAttribute("aria-hidden", String(!isUnlocked));
@@ -124,6 +129,16 @@ async function sha256(value) {
 
 async function loadAllData({ preferNetwork = false } = {}) {
   try {
+    if (state.accessPassword) {
+      const encryptedPayload = await loadEncryptedPayload(state.accessPassword, preferNetwork);
+      if (encryptedPayload) {
+        state.lessons = encryptedPayload.Lessons.map(normalizeLesson);
+        state.studentDefaults = encryptedPayload.StudentDefaults;
+        state.externalIncome = encryptedPayload.ExternalIncome.map(normalizeExternalIncome);
+        return;
+      }
+    }
+
     const [lessons, studentDefaults, externalIncome] = await Promise.all([
       loadJSON("Lessons", preferNetwork),
       loadJSON("StudentDefaults", preferNetwork),
@@ -136,6 +151,53 @@ async function loadAllData({ preferNetwork = false } = {}) {
   } catch (error) {
     showStatus(`讀取資料失敗：${error.message}`, true);
   }
+}
+
+async function loadEncryptedPayload(password, preferNetwork) {
+  const url = preferNetwork ? `${ENCRYPTED_DATA_FILE}?v=${Date.now()}` : ENCRYPTED_DATA_FILE;
+  const response = await fetch(url, { cache: "no-store" });
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`encrypted-data.json HTTP ${response.status}`);
+  }
+
+  const encrypted = await response.json();
+  return decryptPayload(encrypted, password);
+}
+
+async function decryptPayload(encrypted, password) {
+  const salt = base64ToBytes(encrypted.salt);
+  const iv = base64ToBytes(encrypted.iv);
+  const tag = base64ToBytes(encrypted.tag);
+  const data = base64ToBytes(encrypted.data);
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: encrypted.iterations,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+  const ciphertext = new Uint8Array(data.length + tag.length);
+  ciphertext.set(data, 0);
+  ciphertext.set(tag, data.length);
+  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+  return JSON.parse(new TextDecoder().decode(decrypted));
+}
+
+function base64ToBytes(value) {
+  return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
 }
 
 async function initializeApp() {

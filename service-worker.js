@@ -1,10 +1,11 @@
-const CACHE_NAME = "tutoring-manager-web-v2";
+const CACHE_NAME = "tutoring-manager-web-v3";
 const ASSETS = [
   "./",
   "index.html",
   "styles.css",
   "app.js",
   "manifest.webmanifest",
+  "data/encrypted-data.json",
   "data/Lessons.json",
   "data/StudentDefaults.json",
   "data/ExternalIncome.json"
