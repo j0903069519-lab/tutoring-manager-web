@@ -4,6 +4,7 @@ const DATA_FILES = {
   ExternalIncome: "data/ExternalIncome.json"
 };
 
+const TAIWAN_TIME_ZONE = "Asia/Taipei";
 const ENCRYPTED_DATA_FILE = "data/encrypted-data.json";
 const DATA_PASSWORD = "071314";
 
@@ -21,22 +22,25 @@ const state = {
   activeView: "dashboardView",
   searchText: "",
   scheduleMode: "week",
-  scheduleDate: startOfDay(new Date()),
+  scheduleDate: todayInTaiwan(),
   dataLoaded: false
 };
 
 const dateFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
+  timeZone: TAIWAN_TIME_ZONE,
   month: "numeric",
   day: "numeric",
   weekday: "long"
 });
 
 const shortDateFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
+  timeZone: TAIWAN_TIME_ZONE,
   month: "numeric",
   day: "numeric"
 });
 
 const weekdayFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
+  timeZone: TAIWAN_TIME_ZONE,
   weekday: "short"
 });
 
@@ -71,7 +75,7 @@ function bindEvents() {
   });
 
   document.getElementById("todayButton").addEventListener("click", () => {
-    state.scheduleDate = startOfDay(new Date());
+    state.scheduleDate = todayInTaiwan();
     renderSchedule();
   });
 
@@ -217,13 +221,19 @@ function normalizeExternalIncome(income) {
 
 function parseDate(value) {
   if (!value) return new Date(0);
-  if (value instanceof Date) return value;
-  const normalized = String(value).slice(0, 10);
-  const [year, month, day] = normalized.split("-").map(Number);
+  if (value instanceof Date) return dateInTaiwan(value);
+  const text = String(value);
+  if (text.includes("T")) {
+    const parsed = new Date(text);
+    if (!Number.isNaN(parsed.getTime())) {
+      return dateInTaiwan(parsed);
+    }
+  }
+  const [year, month, day] = text.slice(0, 10).split("-").map(Number);
   if (year && month && day) {
     return new Date(year, month - 1, day);
   }
-  return new Date(value);
+  return dateInTaiwan(new Date(value));
 }
 
 function defaultStartTime(timeSlot) {
@@ -236,7 +246,8 @@ function defaultStartTime(timeSlot) {
 function setInitialMonth() {
   const months = getMonths();
   if (!months.length) return;
-  const currentMonth = monthId(new Date().getFullYear(), new Date().getMonth() + 1);
+  const today = todayInTaiwan();
+  const currentMonth = monthId(today.getFullYear(), today.getMonth() + 1);
   if (months.some((month) => month.id === currentMonth)) {
     state.selectedMonth = currentMonth;
     return;
@@ -246,10 +257,10 @@ function setInitialMonth() {
 
 function getMonths() {
   const monthMap = new Map();
-  const now = new Date();
-  monthMap.set(monthId(now.getFullYear(), now.getMonth() + 1), {
-    year: now.getFullYear(),
-    month: now.getMonth() + 1
+  const today = todayInTaiwan();
+  monthMap.set(monthId(today.getFullYear(), today.getMonth() + 1), {
+    year: today.getFullYear(),
+    month: today.getMonth() + 1
   });
   for (const lesson of state.lessons) {
     monthMap.set(monthId(lesson.year, lesson.month), { year: lesson.year, month: lesson.month });
@@ -436,7 +447,7 @@ function renderMonthSchedule(monthStart) {
 function monthDayCell(date, monthStart) {
   const lessons = state.lessons.filter((lesson) => isSameDay(lesson.dateObject, date)).sort(compareLessons);
   const isOutside = date.getMonth() !== monthStart.getMonth();
-  const isToday = isSameDay(date, new Date());
+  const isToday = isSameDay(date, todayInTaiwan());
   const firstLesson = lessons[0];
   return `
     <button class="calendar-day ${isOutside ? "outside" : ""} ${isToday ? "today" : ""}" type="button" data-date="${dateKey(date)}">
@@ -480,14 +491,14 @@ function getSummary() {
 }
 
 function todayLessons() {
-  const now = new Date();
+  const now = todayInTaiwan();
   return state.lessons
     .filter((lesson) => isSameDay(lesson.dateObject, now))
     .sort(compareLessons);
 }
 
 function upcomingLessons() {
-  const start = startOfDay(new Date());
+  const start = todayInTaiwan();
   return state.lessons
     .filter((lesson) => lesson.dateObject >= start)
     .sort(compareLessons)
@@ -647,6 +658,21 @@ function isSameDay(a, b) {
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function todayInTaiwan() {
+  return dateInTaiwan(new Date());
+}
+
+function dateInTaiwan(date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TAIWAN_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return new Date(Number(values.year), Number(values.month) - 1, Number(values.day));
 }
 
 function startOfWeek(date) {

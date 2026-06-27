@@ -1,4 +1,4 @@
-const CACHE_NAME = "tutoring-manager-web-v8";
+const CACHE_NAME = "tutoring-manager-web-v10";
 const ASSETS = [
   "./",
   "index.html",
