@@ -26,12 +26,6 @@ const state = {
   accessPassword: ""
 };
 
-const moneyFormatter = new Intl.NumberFormat("zh-Hant-TW", {
-  style: "currency",
-  currency: "TWD",
-  maximumFractionDigits: 0
-});
-
 const dateFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
   month: "numeric",
   day: "numeric",
@@ -164,7 +158,7 @@ async function loadAllData({ preferNetwork = false } = {}) {
       if (encryptedPayload) {
         state.lessons = encryptedPayload.Lessons.map(normalizeLesson);
         state.studentDefaults = encryptedPayload.StudentDefaults;
-        state.externalIncome = encryptedPayload.ExternalIncome.map(normalizeExternalIncome);
+        state.externalIncome = (encryptedPayload.ExternalIncome || []).map(normalizeExternalIncome);
         return;
       }
     }
@@ -311,9 +305,6 @@ function getMonths() {
   for (const lesson of state.lessons) {
     monthMap.set(monthId(lesson.year, lesson.month), { year: lesson.year, month: lesson.month });
   }
-  for (const income of state.externalIncome) {
-    monthMap.set(monthId(income.year, income.month), { year: income.year, month: income.month });
-  }
   return [...monthMap.values()]
     .sort((a, b) => b.year - a.year || b.month - a.month)
     .map((item) => ({
@@ -339,11 +330,6 @@ function lessonsForSelectedMonth() {
     .sort(compareLessons);
 }
 
-function externalIncomeForSelectedMonth() {
-  const { year, month } = selectedMonthParts();
-  return state.externalIncome.filter((income) => income.year === year && income.month === month);
-}
-
 function compareLessons(a, b) {
   const dateDiff = a.dateObject - b.dateObject;
   if (dateDiff !== 0) return dateDiff;
@@ -356,7 +342,6 @@ function render() {
   renderDashboard();
   renderSchedule();
   renderLessons();
-  renderIncome();
   renderSettings();
 }
 
@@ -365,7 +350,6 @@ function renderTabs() {
     dashboardView: "首頁",
     scheduleView: "課表",
     lessonsView: "課程",
-    incomeView: "收入",
     settingsView: "設定"
   };
   document.getElementById("pageTitle").textContent = titles[state.activeView] || "家教行事曆";
@@ -388,10 +372,8 @@ function renderMonthSelect() {
 
 function renderDashboard() {
   const summary = getSummary();
-  setText("totalIncome", money(summary.total));
-  setText("lessonIncome", money(summary.lessonIncome));
-  setText("externalIncome", money(summary.externalIncome));
   setText("lessonCount", String(summary.lessonCount));
+  setText("lessonHours", hourText(summary.hours));
   renderLessonList("todayLessons", todayLessons(), "今天沒有課程");
   renderLessonList("upcomingLessons", upcomingLessons(), "沒有未來課程");
 }
@@ -406,14 +388,14 @@ function renderSchedule() {
     .filter((lesson) => lesson.dateObject >= range.start && lesson.dateObject < range.end)
     .sort(compareLessons);
   const totalHours = lessons.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
-  const totalAmount = lessons.reduce((sum, lesson) => sum + numeric(lesson.amount), 0);
+  const lessonDays = new Set(lessons.map((lesson) => dateKey(lesson.dateObject))).size;
 
   setText("scheduleTitle", range.title);
   setText("scheduleSubtitle", range.subtitle);
   document.getElementById("scheduleSummary").innerHTML = `
     <article><strong>${lessons.length}</strong><span>堂課</span></article>
     <article><strong>${hourText(totalHours)}</strong><span>總時數</span></article>
-    <article><strong>${money(totalAmount)}</strong><span>課程收入</span></article>
+    <article><strong>${lessonDays}</strong><span>上課日</span></article>
   `;
 
   if (state.scheduleMode === "month") {
@@ -521,7 +503,7 @@ function scheduleLessonCard(lesson) {
   const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
   const meta = [
     subject,
-    `${hourText(lesson.hours)} · ${money(lesson.amount)}`,
+    hourText(lesson.hours),
     lesson.paymentStatus
   ].filter(Boolean).map(escapeHTML).join("<br>");
 
@@ -541,15 +523,9 @@ function scheduleLessonCard(lesson) {
 
 function getSummary() {
   const lessons = lessonsForSelectedMonth();
-  const externalIncome = externalIncomeForSelectedMonth();
-  const lessonIncome = lessons.reduce((sum, lesson) => sum + numeric(lesson.amount), 0);
-  const externalTotal = externalIncome.reduce((sum, income) => sum + numeric(income.amount), 0);
   const hours = lessons.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
   return {
     lessonCount: lessons.length,
-    lessonIncome,
-    externalIncome: externalTotal,
-    total: lessonIncome + externalTotal,
     hours
   };
 }
@@ -607,40 +583,8 @@ function renderLessons() {
   `).join("");
 }
 
-function renderIncome() {
-  const summary = getSummary();
-  setText("incomeTotal", money(summary.total));
-  setText("incomeHours", hourText(summary.hours));
-  setText("incomeLessons", money(summary.lessonIncome));
-  setText("incomeExternal", money(summary.externalIncome));
-
-  const grouped = new Map();
-  for (const lesson of lessonsForSelectedMonth()) {
-    const current = grouped.get(lesson.student) || { student: lesson.student, count: 0, hours: 0, amount: 0 };
-    current.count += 1;
-    current.hours += numeric(lesson.hours);
-    current.amount += numeric(lesson.amount);
-    grouped.set(lesson.student, current);
-  }
-
-  const rows = [...grouped.values()].sort((a, b) => b.amount - a.amount || a.student.localeCompare(b.student, "zh-Hant"));
-  const container = document.getElementById("studentIncomeList");
-  container.innerHTML = rows.length
-    ? rows.map((row) => `
-        <article class="income-row">
-          <div>
-            <strong>${escapeHTML(row.student)}</strong>
-            <div class="lesson-meta">${row.count} 堂 · ${hourText(row.hours)}</div>
-          </div>
-          <strong>${money(row.amount)}</strong>
-        </article>
-      `).join("")
-    : emptyState("這個月份沒有課程收入");
-}
-
 function renderSettings() {
   setText("settingsLessonCount", String(state.lessons.length));
-  setText("settingsExternalCount", String(state.externalIncome.length));
   setText("settingsPreferenceCount", String(state.studentDefaults.length));
 }
 
@@ -656,7 +600,7 @@ function lessonCard(lesson) {
   const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
   const meta = [
     subject,
-    `${hourText(lesson.hours)} · ${money(lesson.amount)}`,
+    hourText(lesson.hours),
     lesson.paymentStatus
   ].filter(Boolean).map(escapeHTML).join("<br>");
 
@@ -706,7 +650,7 @@ function validateImportedData(name, data) {
     throw new Error("Lessons.json 缺少課程欄位");
   }
   if (name === "ExternalIncome" && data.some((item) => !item.incomeID || !item.date)) {
-    throw new Error("ExternalIncome.json 缺少收入欄位");
+    throw new Error("ExternalIncome.json 缺少必要欄位");
   }
 }
 
@@ -736,10 +680,6 @@ function setText(id, value) {
 function numeric(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
-}
-
-function money(value) {
-  return moneyFormatter.format(numeric(value));
 }
 
 function hourText(value) {

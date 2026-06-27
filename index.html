@@ -13,7 +13,7 @@
     <form id="lockForm" class="lock-panel">
       <p class="eyebrow">家教行事曆</p>
       <h1 id="lockTitle">輸入密碼</h1>
-      <p class="muted">這是展示用入口，通過後才會顯示課程與收入頁面。</p>
+      <p class="muted">這是展示用入口，通過後才會顯示課表與課程頁面。</p>
       <label class="lock-field">
         <span>密碼</span>
         <input id="passwordInput" type="password" autocomplete="current-password" inputmode="text">
@@ -40,20 +40,12 @@
         <div id="statusBanner" class="status-banner" hidden></div>
         <div class="metric-grid">
           <article class="metric metric-total">
-            <span>總收入</span>
-            <strong id="totalIncome">$0</strong>
-          </article>
-          <article class="metric">
-            <span>課程收入</span>
-            <strong id="lessonIncome">$0</strong>
-          </article>
-          <article class="metric">
-            <span>外務收入</span>
-            <strong id="externalIncome">$0</strong>
-          </article>
-          <article class="metric">
-            <span>堂數</span>
+            <span>本月堂數</span>
             <strong id="lessonCount">0</strong>
+          </article>
+          <article class="metric">
+            <span>本月時數</span>
+            <strong id="lessonHours">0 小時</strong>
           </article>
         </div>
 
@@ -102,43 +94,15 @@
         <div id="lessonsList" class="date-list"></div>
       </section>
 
-      <section id="incomeView" class="view" aria-labelledby="incomeTab">
-        <div class="metric-grid">
-          <article class="metric metric-total">
-            <span>總收入</span>
-            <strong id="incomeTotal">$0</strong>
-          </article>
-          <article class="metric">
-            <span>總時數</span>
-            <strong id="incomeHours">0 小時</strong>
-          </article>
-          <article class="metric">
-            <span>課程收入</span>
-            <strong id="incomeLessons">$0</strong>
-          </article>
-          <article class="metric">
-            <span>外務收入</span>
-            <strong id="incomeExternal">$0</strong>
-          </article>
-        </div>
-
-        <section class="panel">
-          <div class="section-heading">
-            <h2>學生收入</h2>
-          </div>
-          <div id="studentIncomeList" class="income-list"></div>
-        </section>
-      </section>
-
       <section id="settingsView" class="view" aria-labelledby="settingsTab">
         <section class="panel">
           <div class="section-heading">
             <h2>資料更新</h2>
           </div>
-          <p class="muted">網頁會先讀取內建 JSON。你也可以選擇 Mac 同步出的三份檔案，資料會存進這台裝置的瀏覽器快取。</p>
+          <p class="muted">網頁會先讀取內建資料。你也可以選擇 Mac 同步出的 JSON 檔案，資料會存進這台裝置的瀏覽器快取。</p>
           <label class="file-import">
             <input id="jsonImport" type="file" accept="application/json,.json" multiple>
-            <span>匯入 Lessons / StudentDefaults / ExternalIncome</span>
+            <span>匯入 Lessons / StudentDefaults</span>
           </label>
           <button id="clearCacheButton" class="plain-button" type="button">清除瀏覽器快取資料</button>
         </section>
@@ -149,7 +113,6 @@
           </div>
           <dl class="data-stats">
             <div><dt>課程</dt><dd id="settingsLessonCount">0</dd></div>
-            <div><dt>外務收入</dt><dd id="settingsExternalCount">0</dd></div>
             <div><dt>學生預設</dt><dd id="settingsPreferenceCount">0</dd></div>
           </dl>
           <button id="lockButton" class="plain-button" type="button">重新上鎖</button>
@@ -161,7 +124,6 @@
       <button id="dashboardTab" class="tab active" type="button" data-view="dashboardView">首頁</button>
       <button id="scheduleTab" class="tab" type="button" data-view="scheduleView">課表</button>
       <button id="lessonsTab" class="tab" type="button" data-view="lessonsView">課程</button>
-      <button id="incomeTab" class="tab" type="button" data-view="incomeView">收入</button>
       <button id="settingsTab" class="tab" type="button" data-view="settingsView">設定</button>
     </nav>
   </div>
