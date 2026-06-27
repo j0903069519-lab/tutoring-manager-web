@@ -37,6 +37,10 @@ const shortDateFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
   day: "numeric"
 });
 
+const weekdayFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
+  weekday: "short"
+});
+
 document.addEventListener("DOMContentLoaded", async () => {
   bindEvents();
   updateLockState();
@@ -511,7 +515,7 @@ function scheduleLessonCard(lesson) {
     <article class="lesson-card schedule-card">
       <div>
         <div class="lesson-time">${escapeHTML(lesson.startTime)}</div>
-        <div class="lesson-weekday">${shortDateFormatter.format(lesson.dateObject)} 週${escapeHTML(lesson.weekday || "")}</div>
+        <div class="lesson-weekday">${lessonDateLabel(lesson.dateObject)}</div>
       </div>
       <div>
         <div class="lesson-title">${title}</div>
@@ -608,7 +612,7 @@ function lessonCard(lesson) {
     <article class="lesson-card">
       <div>
         <div class="lesson-time">${escapeHTML(lesson.startTime)}</div>
-        <div class="lesson-weekday">${shortDateFormatter.format(lesson.dateObject)} 週${escapeHTML(lesson.weekday || "")}</div>
+        <div class="lesson-weekday">${lessonDateLabel(lesson.dateObject)}</div>
       </div>
       <div>
         <div class="lesson-title">${title}</div>
@@ -684,6 +688,10 @@ function numeric(value) {
 
 function hourText(value) {
   return `${Math.round(numeric(value) * 10) / 10} 小時`;
+}
+
+function lessonDateLabel(date) {
+  return `${shortDateFormatter.format(date)} ${weekdayFormatter.format(date)}`;
 }
 
 function isSameDay(a, b) {
