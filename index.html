@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7f2">
+  <title>課伴</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">課伴</p>
+        <h1 id="pageTitle">首頁</h1>
+      </div>
+      <div class="top-actions">
+        <select id="monthSelect" aria-label="選擇月份"></select>
+        <button id="syncButton" class="icon-button" type="button" title="重新載入資料">↻</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="dashboardView" class="view active" aria-labelledby="dashboardTab">
+        <div id="statusBanner" class="status-banner" hidden></div>
+        <div class="metric-grid">
+          <article class="metric metric-total">
+            <span>總收入</span>
+            <strong id="totalIncome">$0</strong>
+          </article>
+          <article class="metric">
+            <span>課程收入</span>
+            <strong id="lessonIncome">$0</strong>
+          </article>
+          <article class="metric">
+            <span>外務收入</span>
+            <strong id="externalIncome">$0</strong>
+          </article>
+          <article class="metric">
+            <span>堂數</span>
+            <strong id="lessonCount">0</strong>
+          </article>
+        </div>
+
+        <section class="panel">
+          <div class="section-heading">
+            <h2>今天</h2>
+          </div>
+          <div id="todayLessons" class="lesson-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="section-heading">
+            <h2>近期課程</h2>
+          </div>
+          <div id="upcomingLessons" class="lesson-list"></div>
+        </section>
+      </section>
+
+      <section id="lessonsView" class="view" aria-labelledby="lessonsTab">
+        <div class="search-row">
+          <input id="lessonSearch" type="search" placeholder="搜尋學生、科目、備註">
+        </div>
+        <div id="lessonsList" class="date-list"></div>
+      </section>
+
+      <section id="incomeView" class="view" aria-labelledby="incomeTab">
+        <div class="metric-grid">
+          <article class="metric metric-total">
+            <span>總收入</span>
+            <strong id="incomeTotal">$0</strong>
+          </article>
+          <article class="metric">
+            <span>總時數</span>
+            <strong id="incomeHours">0 小時</strong>
+          </article>
+          <article class="metric">
+            <span>課程收入</span>
+            <strong id="incomeLessons">$0</strong>
+          </article>
+          <article class="metric">
+            <span>外務收入</span>
+            <strong id="incomeExternal">$0</strong>
+          </article>
+        </div>
+
+        <section class="panel">
+          <div class="section-heading">
+            <h2>學生收入</h2>
+          </div>
+          <div id="studentIncomeList" class="income-list"></div>
+        </section>
+      </section>
+
+      <section id="settingsView" class="view" aria-labelledby="settingsTab">
+        <section class="panel">
+          <div class="section-heading">
+            <h2>資料更新</h2>
+          </div>
+          <p class="muted">網頁會先讀取內建 JSON。你也可以選擇 Mac 同步出的三份檔案，資料會存進這台裝置的瀏覽器快取。</p>
+          <label class="file-import">
+            <input id="jsonImport" type="file" accept="application/json,.json" multiple>
+            <span>匯入 Lessons / StudentDefaults / ExternalIncome</span>
+          </label>
+          <button id="clearCacheButton" class="plain-button" type="button">清除瀏覽器快取資料</button>
+        </section>
+
+        <section class="panel">
+          <div class="section-heading">
+            <h2>目前資料</h2>
+          </div>
+          <dl class="data-stats">
+            <div><dt>課程</dt><dd id="settingsLessonCount">0</dd></div>
+            <div><dt>外務收入</dt><dd id="settingsExternalCount">0</dd></div>
+            <div><dt>學生預設</dt><dd id="settingsPreferenceCount">0</dd></div>
+          </dl>
+        </section>
+      </section>
+    </main>
+
+    <nav class="tabbar" aria-label="主要導覽">
+      <button id="dashboardTab" class="tab active" type="button" data-view="dashboardView">首頁</button>
+      <button id="lessonsTab" class="tab" type="button" data-view="lessonsView">課程</button>
+      <button id="incomeTab" class="tab" type="button" data-view="incomeView">收入</button>
+      <button id="settingsTab" class="tab" type="button" data-view="settingsView">設定</button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
