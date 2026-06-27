@@ -9,3 +9,13 @@
 - `ExternalIncome.json`
 
 匯入後資料會存在該裝置的瀏覽器快取，不會上傳到 GitHub。
+
+## 展示入口密碼
+
+目前預設密碼是：
+
+```text
+keban2026
+```
+
+密碼檢查在 `app.js` 的 `ACCESS_PASSWORD_HASH`。這只能擋一般訪客，不能取代後端登入系統，所以真實資料仍然不要放進公開 repo。

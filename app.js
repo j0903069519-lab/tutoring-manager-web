@@ -4,6 +4,9 @@ const DATA_FILES = {
   ExternalIncome: "data/ExternalIncome.json"
 };
 
+const ACCESS_PASSWORD_HASH = "b632d38468726dbea21bc052d99c690cf9e41fa9ba899640175bebf1e8cacf18";
+const ACCESS_KEY = "tutoring.accessGranted";
+
 const CACHE_KEYS = {
   Lessons: "tutoring.lessons",
   StudentDefaults: "tutoring.studentDefaults",
@@ -16,7 +19,8 @@ const state = {
   externalIncome: [],
   selectedMonth: "",
   activeView: "dashboardView",
-  searchText: ""
+  searchText: "",
+  dataLoaded: false
 };
 
 const moneyFormatter = new Intl.NumberFormat("zh-Hant-TW", {
@@ -38,12 +42,14 @@ const shortDateFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindEvents();
-  await loadAllData();
-  setInitialMonth();
-  render();
+  if (updateLockState()) {
+    await initializeApp();
+  }
 });
 
 function bindEvents() {
+  document.getElementById("lockForm").addEventListener("submit", unlockApp);
+
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => {
       state.activeView = tab.dataset.view;
@@ -70,6 +76,50 @@ function bindEvents() {
 
   document.getElementById("jsonImport").addEventListener("change", importJSONFiles);
   document.getElementById("clearCacheButton").addEventListener("click", clearCachedData);
+  document.getElementById("lockButton").addEventListener("click", lockApp);
+}
+
+async function unlockApp(event) {
+  event.preventDefault();
+  const input = document.getElementById("passwordInput");
+  const error = document.getElementById("lockError");
+  const hash = await sha256(input.value);
+  if (hash !== ACCESS_PASSWORD_HASH) {
+    error.hidden = false;
+    input.select();
+    return;
+  }
+
+  sessionStorage.setItem(ACCESS_KEY, "true");
+  input.value = "";
+  error.hidden = true;
+  if (updateLockState()) {
+    await initializeApp();
+  }
+}
+
+function lockApp() {
+  sessionStorage.removeItem(ACCESS_KEY);
+  updateLockState();
+}
+
+function updateLockState() {
+  const isUnlocked = sessionStorage.getItem(ACCESS_KEY) === "true";
+  document.body.classList.toggle("locked", !isUnlocked);
+  document.getElementById("lockScreen").hidden = isUnlocked;
+  document.querySelector(".app-shell").setAttribute("aria-hidden", String(!isUnlocked));
+  if (!isUnlocked) {
+    window.setTimeout(() => document.getElementById("passwordInput").focus(), 50);
+  }
+  return isUnlocked;
+}
+
+async function sha256(value) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 async function loadAllData({ preferNetwork = false } = {}) {
@@ -86,6 +136,14 @@ async function loadAllData({ preferNetwork = false } = {}) {
   } catch (error) {
     showStatus(`讀取資料失敗：${error.message}`, true);
   }
+}
+
+async function initializeApp() {
+  if (state.dataLoaded) return;
+  await loadAllData();
+  state.dataLoaded = true;
+  setInitialMonth();
+  render();
 }
 
 async function loadJSON(name, preferNetwork) {
