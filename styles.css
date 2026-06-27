@@ -56,6 +56,10 @@ select {
   backdrop-filter: blur(18px);
 }
 
+.lock-screen[hidden] {
+  display: none;
+}
+
 .lock-panel {
   width: min(100%, 390px);
   padding: 24px;
