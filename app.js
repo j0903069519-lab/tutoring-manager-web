@@ -290,17 +290,15 @@ function defaultStartTime(timeSlot) {
   return timeSlot || "";
 }
 
-function setInitialMonth(forceLatest = false) {
+function setInitialMonth() {
   const months = getMonths();
   if (!months.length) return;
   const currentMonth = monthId(new Date().getFullYear(), new Date().getMonth() + 1);
-  if (!forceLatest && months.some((month) => month.id === currentMonth)) {
+  if (months.some((month) => month.id === currentMonth)) {
     state.selectedMonth = currentMonth;
     return;
   }
-  if (forceLatest || !state.selectedMonth || !months.some((month) => month.id === state.selectedMonth)) {
-    state.selectedMonth = months[0].id;
-  }
+  state.selectedMonth = currentMonth;
 }
 
 function getMonths() {
@@ -370,7 +368,7 @@ function renderTabs() {
     incomeView: "收入",
     settingsView: "設定"
   };
-  document.getElementById("pageTitle").textContent = titles[state.activeView] || "課伴";
+  document.getElementById("pageTitle").textContent = titles[state.activeView] || "家教行事曆";
   document.querySelectorAll(".view").forEach((view) => {
     view.classList.toggle("active", view.id === state.activeView);
   });
@@ -690,7 +688,7 @@ async function importJSONFiles(event) {
       localStorage.setItem(CACHE_KEYS[name], JSON.stringify(parsed));
     }
     await loadAllData();
-    setInitialMonth(true);
+    setInitialMonth();
     showStatus("已匯入並更新資料");
     render();
   } catch (error) {
@@ -715,7 +713,7 @@ function validateImportedData(name, data) {
 async function clearCachedData() {
   Object.values(CACHE_KEYS).forEach((key) => localStorage.removeItem(key));
   await loadAllData({ preferNetwork: true });
-  setInitialMonth(true);
+  setInitialMonth();
   showStatus("已清除快取並重新載入內建資料");
   render();
 }
