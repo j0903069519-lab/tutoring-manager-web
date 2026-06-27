@@ -5,7 +5,7 @@ const DATA_FILES = {
 };
 
 const ENCRYPTED_DATA_FILE = "data/encrypted-data.json";
-const ACCESS_PASSWORD_HASH = "aad64e9fbc792d72f50eff2f1d042e95019073c256981ad8eff7cdecc61f8935";
+const DATA_PASSWORD = "071314";
 
 const CACHE_KEYS = {
   Lessons: "tutoring.lessons",
@@ -22,8 +22,7 @@ const state = {
   searchText: "",
   scheduleMode: "week",
   scheduleDate: startOfDay(new Date()),
-  dataLoaded: false,
-  accessPassword: ""
+  dataLoaded: false
 };
 
 const dateFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
@@ -43,12 +42,10 @@ const weekdayFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindEvents();
-  updateLockState();
+  await initializeApp();
 });
 
 function bindEvents() {
-  document.getElementById("lockForm").addEventListener("submit", unlockApp);
-
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => {
       state.activeView = tab.dataset.view;
@@ -103,68 +100,16 @@ function bindEvents() {
 
   document.getElementById("jsonImport").addEventListener("change", importJSONFiles);
   document.getElementById("clearCacheButton").addEventListener("click", clearCachedData);
-  document.getElementById("lockButton").addEventListener("click", lockApp);
-}
-
-async function unlockApp(event) {
-  event.preventDefault();
-  const input = document.getElementById("passwordInput");
-  const error = document.getElementById("lockError");
-  const hash = await sha256(input.value);
-  if (hash !== ACCESS_PASSWORD_HASH) {
-    error.hidden = false;
-    input.select();
-    return;
-  }
-
-  state.accessPassword = input.value;
-  input.value = "";
-  error.hidden = true;
-  if (updateLockState()) {
-    await initializeApp();
-  }
-}
-
-function lockApp() {
-  state.accessPassword = "";
-  state.dataLoaded = false;
-  state.lessons = [];
-  state.studentDefaults = [];
-  state.externalIncome = [];
-  state.selectedMonth = "";
-  render();
-  updateLockState();
-}
-
-function updateLockState() {
-  const isUnlocked = Boolean(state.accessPassword);
-  document.body.classList.toggle("locked", !isUnlocked);
-  document.getElementById("lockScreen").hidden = isUnlocked;
-  document.querySelector(".app-shell").setAttribute("aria-hidden", String(!isUnlocked));
-  if (!isUnlocked) {
-    window.setTimeout(() => document.getElementById("passwordInput").focus(), 50);
-  }
-  return isUnlocked;
-}
-
-async function sha256(value) {
-  const bytes = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 async function loadAllData({ preferNetwork = false } = {}) {
   try {
-    if (state.accessPassword) {
-      const encryptedPayload = await loadEncryptedPayload(state.accessPassword, preferNetwork);
-      if (encryptedPayload) {
-        state.lessons = encryptedPayload.Lessons.map(normalizeLesson);
-        state.studentDefaults = encryptedPayload.StudentDefaults;
-        state.externalIncome = (encryptedPayload.ExternalIncome || []).map(normalizeExternalIncome);
-        return;
-      }
+    const encryptedPayload = await loadEncryptedPayload(DATA_PASSWORD, preferNetwork);
+    if (encryptedPayload) {
+      state.lessons = encryptedPayload.Lessons.map(normalizeLesson);
+      state.studentDefaults = encryptedPayload.StudentDefaults;
+      state.externalIncome = (encryptedPayload.ExternalIncome || []).map(normalizeExternalIncome);
+      return;
     }
 
     const [lessons, studentDefaults, externalIncome] = await Promise.all([

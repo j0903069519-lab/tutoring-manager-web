@@ -30,73 +30,9 @@ select {
   font: inherit;
 }
 
-.locked {
-  overflow: hidden;
-}
-
 .app-shell {
   min-height: 100vh;
   padding-bottom: calc(78px + env(safe-area-inset-bottom));
-}
-
-.locked .app-shell {
-  filter: blur(12px);
-  pointer-events: none;
-  user-select: none;
-}
-
-.lock-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(246, 247, 242, 0.92);
-  backdrop-filter: blur(18px);
-}
-
-.lock-screen[hidden] {
-  display: none;
-}
-
-.lock-panel {
-  width: min(100%, 390px);
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: 0 18px 60px rgba(24, 32, 29, 0.14);
-}
-
-.lock-panel h1 {
-  margin-bottom: 10px;
-}
-
-.lock-field {
-  display: grid;
-  gap: 8px;
-  margin-top: 20px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.lock-field input {
-  width: 100%;
-  min-height: 46px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 18px;
-}
-
-.lock-error {
-  margin: 10px 0 0;
-  color: var(--danger);
-  font-weight: 800;
 }
 
 .topbar {

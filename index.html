@@ -9,20 +9,6 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <section id="lockScreen" class="lock-screen" aria-labelledby="lockTitle">
-    <form id="lockForm" class="lock-panel">
-      <p class="eyebrow">家教行事曆</p>
-      <h1 id="lockTitle">輸入密碼</h1>
-      <p class="muted">這是展示用入口，通過後才會顯示課表與課程頁面。</p>
-      <label class="lock-field">
-        <span>密碼</span>
-        <input id="passwordInput" type="password" autocomplete="current-password" inputmode="text">
-      </label>
-      <p id="lockError" class="lock-error" role="alert" hidden>密碼不正確</p>
-      <button class="primary-button" type="submit">進入家教行事曆</button>
-    </form>
-  </section>
-
   <div class="app-shell">
     <header class="topbar">
       <div>
@@ -115,7 +101,6 @@
             <div><dt>課程</dt><dd id="settingsLessonCount">0</dd></div>
             <div><dt>學生預設</dt><dd id="settingsPreferenceCount">0</dd></div>
           </dl>
-          <button id="lockButton" class="plain-button" type="button">重新上鎖</button>
         </section>
       </section>
     </main>
