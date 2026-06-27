@@ -72,6 +72,29 @@
         </section>
       </section>
 
+      <section id="scheduleView" class="view" aria-labelledby="scheduleTab">
+        <div class="schedule-toolbar">
+          <div class="segmented-control" role="group" aria-label="課表顯示方式">
+            <button class="schedule-mode active" type="button" data-mode="day">日</button>
+            <button class="schedule-mode" type="button" data-mode="week">週</button>
+            <button class="schedule-mode" type="button" data-mode="month">月</button>
+          </div>
+          <button id="todayButton" class="small-button" type="button">今天</button>
+        </div>
+
+        <div class="schedule-nav">
+          <button id="previousPeriodButton" class="icon-button" type="button" title="上一段">‹</button>
+          <div>
+            <h2 id="scheduleTitle">課表</h2>
+            <p id="scheduleSubtitle" class="muted"></p>
+          </div>
+          <button id="nextPeriodButton" class="icon-button" type="button" title="下一段">›</button>
+        </div>
+
+        <div id="scheduleSummary" class="schedule-summary"></div>
+        <div id="scheduleContent" class="schedule-content"></div>
+      </section>
+
       <section id="lessonsView" class="view" aria-labelledby="lessonsTab">
         <div class="search-row">
           <input id="lessonSearch" type="search" placeholder="搜尋學生、科目、備註">
@@ -136,6 +159,7 @@
 
     <nav class="tabbar" aria-label="主要導覽">
       <button id="dashboardTab" class="tab active" type="button" data-view="dashboardView">首頁</button>
+      <button id="scheduleTab" class="tab" type="button" data-view="scheduleView">課表</button>
       <button id="lessonsTab" class="tab" type="button" data-view="lessonsView">課程</button>
       <button id="incomeTab" class="tab" type="button" data-view="incomeView">收入</button>
       <button id="settingsTab" class="tab" type="button" data-view="settingsView">設定</button>

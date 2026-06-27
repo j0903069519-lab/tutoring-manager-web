@@ -20,6 +20,8 @@ const state = {
   selectedMonth: "",
   activeView: "dashboardView",
   searchText: "",
+  scheduleMode: "week",
+  scheduleDate: startOfDay(new Date()),
   dataLoaded: false,
   accessPassword: ""
 };
@@ -66,9 +68,37 @@ function bindEvents() {
     renderLessons();
   });
 
+  document.querySelectorAll(".schedule-mode").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.scheduleMode = button.dataset.mode;
+      renderSchedule();
+    });
+  });
+
+  document.getElementById("todayButton").addEventListener("click", () => {
+    state.scheduleDate = startOfDay(new Date());
+    renderSchedule();
+  });
+
+  document.getElementById("previousPeriodButton").addEventListener("click", () => {
+    moveSchedulePeriod(-1);
+  });
+
+  document.getElementById("nextPeriodButton").addEventListener("click", () => {
+    moveSchedulePeriod(1);
+  });
+
+  document.getElementById("scheduleContent").addEventListener("click", (event) => {
+    const dayButton = event.target.closest(".calendar-day");
+    if (!dayButton) return;
+    state.scheduleDate = parseDate(dayButton.dataset.date);
+    state.scheduleMode = "day";
+    renderSchedule();
+  });
+
   document.getElementById("syncButton").addEventListener("click", async () => {
     await loadAllData({ preferNetwork: true });
-    setInitialMonth(true);
+    setInitialMonth();
     showStatus("已重新載入資料");
     render();
   });
@@ -263,6 +293,11 @@ function defaultStartTime(timeSlot) {
 function setInitialMonth(forceLatest = false) {
   const months = getMonths();
   if (!months.length) return;
+  const currentMonth = monthId(new Date().getFullYear(), new Date().getMonth() + 1);
+  if (!forceLatest && months.some((month) => month.id === currentMonth)) {
+    state.selectedMonth = currentMonth;
+    return;
+  }
   if (forceLatest || !state.selectedMonth || !months.some((month) => month.id === state.selectedMonth)) {
     state.selectedMonth = months[0].id;
   }
@@ -270,6 +305,11 @@ function setInitialMonth(forceLatest = false) {
 
 function getMonths() {
   const monthMap = new Map();
+  const now = new Date();
+  monthMap.set(monthId(now.getFullYear(), now.getMonth() + 1), {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1
+  });
   for (const lesson of state.lessons) {
     monthMap.set(monthId(lesson.year, lesson.month), { year: lesson.year, month: lesson.month });
   }
@@ -316,6 +356,7 @@ function render() {
   renderTabs();
   renderMonthSelect();
   renderDashboard();
+  renderSchedule();
   renderLessons();
   renderIncome();
   renderSettings();
@@ -324,6 +365,7 @@ function render() {
 function renderTabs() {
   const titles = {
     dashboardView: "首頁",
+    scheduleView: "課表",
     lessonsView: "課程",
     incomeView: "收入",
     settingsView: "設定"
@@ -354,6 +396,149 @@ function renderDashboard() {
   setText("lessonCount", String(summary.lessonCount));
   renderLessonList("todayLessons", todayLessons(), "今天沒有課程");
   renderLessonList("upcomingLessons", upcomingLessons(), "沒有未來課程");
+}
+
+function renderSchedule() {
+  document.querySelectorAll(".schedule-mode").forEach((button) => {
+    button.classList.toggle("active", button.dataset.mode === state.scheduleMode);
+  });
+
+  const range = scheduleRange();
+  const lessons = state.lessons
+    .filter((lesson) => lesson.dateObject >= range.start && lesson.dateObject < range.end)
+    .sort(compareLessons);
+  const totalHours = lessons.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
+  const totalAmount = lessons.reduce((sum, lesson) => sum + numeric(lesson.amount), 0);
+
+  setText("scheduleTitle", range.title);
+  setText("scheduleSubtitle", range.subtitle);
+  document.getElementById("scheduleSummary").innerHTML = `
+    <article><strong>${lessons.length}</strong><span>堂課</span></article>
+    <article><strong>${hourText(totalHours)}</strong><span>總時數</span></article>
+    <article><strong>${money(totalAmount)}</strong><span>課程收入</span></article>
+  `;
+
+  if (state.scheduleMode === "month") {
+    renderMonthSchedule(range.start);
+    return;
+  }
+
+  const container = document.getElementById("scheduleContent");
+  if (!lessons.length) {
+    container.innerHTML = emptyState(state.scheduleMode === "day" ? "這一天沒有課程" : "這一週沒有課程");
+    return;
+  }
+
+  if (state.scheduleMode === "day") {
+    container.innerHTML = `<div class="lesson-list">${lessons.map(scheduleLessonCard).join("")}</div>`;
+    return;
+  }
+
+  container.innerHTML = weekDays(range.start).map((date) => {
+    const dayLessons = lessons.filter((lesson) => isSameDay(lesson.dateObject, date));
+    return `
+      <section class="schedule-day">
+        <h3>${dateFormatter.format(date)}</h3>
+        ${dayLessons.length ? `<div class="lesson-list">${dayLessons.map(scheduleLessonCard).join("")}</div>` : emptyState("沒有課程")}
+      </section>
+    `;
+  }).join("");
+}
+
+function scheduleRange() {
+  const date = state.scheduleDate;
+  if (state.scheduleMode === "day") {
+    const start = startOfDay(date);
+    const end = addDays(start, 1);
+    return {
+      start,
+      end,
+      title: dateFormatter.format(start),
+      subtitle: "日課表"
+    };
+  }
+
+  if (state.scheduleMode === "month") {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+    return {
+      start,
+      end,
+      title: `${date.getFullYear()} / ${date.getMonth() + 1}`,
+      subtitle: "月課表"
+    };
+  }
+
+  const start = startOfWeek(date);
+  const end = addDays(start, 7);
+  return {
+    start,
+    end,
+    title: `${shortDateFormatter.format(start)} - ${shortDateFormatter.format(addDays(end, -1))}`,
+    subtitle: "週課表"
+  };
+}
+
+function moveSchedulePeriod(direction) {
+  if (state.scheduleMode === "day") {
+    state.scheduleDate = addDays(state.scheduleDate, direction);
+  } else if (state.scheduleMode === "month") {
+    state.scheduleDate = new Date(state.scheduleDate.getFullYear(), state.scheduleDate.getMonth() + direction, 1);
+  } else {
+    state.scheduleDate = addDays(state.scheduleDate, direction * 7);
+  }
+  renderSchedule();
+}
+
+function renderMonthSchedule(monthStart) {
+  const calendarStart = startOfWeek(monthStart);
+  const days = Array.from({ length: 42 }, (_, index) => addDays(calendarStart, index));
+  const container = document.getElementById("scheduleContent");
+  container.innerHTML = `
+    <div class="calendar-grid calendar-weekdays">
+      ${["一", "二", "三", "四", "五", "六", "日"].map((day) => `<div>${day}</div>`).join("")}
+    </div>
+    <div class="calendar-grid">
+      ${days.map((date) => monthDayCell(date, monthStart)).join("")}
+    </div>
+  `;
+}
+
+function monthDayCell(date, monthStart) {
+  const lessons = state.lessons.filter((lesson) => isSameDay(lesson.dateObject, date)).sort(compareLessons);
+  const isOutside = date.getMonth() !== monthStart.getMonth();
+  const isToday = isSameDay(date, new Date());
+  const firstLesson = lessons[0];
+  return `
+    <button class="calendar-day ${isOutside ? "outside" : ""} ${isToday ? "today" : ""}" type="button" data-date="${dateKey(date)}">
+      <span>${date.getDate()}</span>
+      ${lessons.length ? `<strong>${lessons.length} 堂</strong>` : ""}
+      ${firstLesson ? `<small>${escapeHTML(firstLesson.startTime)} ${escapeHTML(firstLesson.student)}</small>` : ""}
+    </button>
+  `;
+}
+
+function scheduleLessonCard(lesson) {
+  const title = escapeHTML(lesson.student || "未命名");
+  const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
+  const meta = [
+    subject,
+    `${hourText(lesson.hours)} · ${money(lesson.amount)}`,
+    lesson.paymentStatus
+  ].filter(Boolean).map(escapeHTML).join("<br>");
+
+  return `
+    <article class="lesson-card schedule-card">
+      <div>
+        <div class="lesson-time">${escapeHTML(lesson.startTime)}</div>
+        <div class="lesson-weekday">${shortDateFormatter.format(lesson.dateObject)} 週${escapeHTML(lesson.weekday || "")}</div>
+      </div>
+      <div>
+        <div class="lesson-title">${title}</div>
+        <div class="lesson-meta">${meta}</div>
+      </div>
+    </article>
+  `;
 }
 
 function getSummary() {
@@ -571,6 +756,27 @@ function isSameDay(a, b) {
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfWeek(date) {
+  const start = startOfDay(date);
+  const day = start.getDay() || 7;
+  return addDays(start, 1 - day);
+}
+
+function addDays(date, days) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+}
+
+function weekDays(start) {
+  return Array.from({ length: 7 }, (_, index) => addDays(start, index));
+}
+
+function dateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function escapeHTML(value) {
