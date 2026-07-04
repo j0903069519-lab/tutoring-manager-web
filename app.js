@@ -472,11 +472,10 @@ function monthDayCell(date, monthStart) {
 
 function scheduleLessonCard(lesson) {
   const title = escapeHTML(lesson.student || "未命名");
-  const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
+  const subject = [lesson.subject, lesson.grade, lesson.location].filter(Boolean).join(" · ");
   const meta = [
     subject,
-    hourText(lesson.hours),
-    lesson.paymentStatus
+    hourText(lesson.hours)
   ].filter(Boolean).map(escapeHTML).join("<br>");
 
   return `
@@ -527,7 +526,7 @@ function renderLessons() {
       lesson.rawStudent,
       lesson.subject,
       lesson.grade,
-      lesson.paymentStatus,
+      lesson.location,
       lesson.rawEntry
     ].join(" ");
     return haystack.toLocaleLowerCase().includes(search.toLocaleLowerCase());
@@ -569,11 +568,10 @@ function renderLessonList(id, lessons, emptyText) {
 
 function lessonCard(lesson) {
   const title = escapeHTML(lesson.student || "未命名");
-  const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
+  const subject = [lesson.subject, lesson.grade, lesson.location].filter(Boolean).join(" · ");
   const meta = [
     subject,
-    hourText(lesson.hours),
-    lesson.paymentStatus
+    hourText(lesson.hours)
   ].filter(Boolean).map(escapeHTML).join("<br>");
 
   return `
