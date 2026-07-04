@@ -472,10 +472,12 @@ function monthDayCell(date, monthStart) {
 
 function scheduleLessonCard(lesson) {
   const title = escapeHTML(lesson.student || "未命名");
-  const subject = [lesson.subject, lesson.grade, lesson.location].filter(Boolean).join(" · ");
+  const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
+  const location = lesson.location ? `上課地點：${lesson.location}` : "上課地點：未填";
   const meta = [
     subject,
-    hourText(lesson.hours)
+    hourText(lesson.hours),
+    location
   ].filter(Boolean).map(escapeHTML).join("<br>");
 
   return `
@@ -568,10 +570,12 @@ function renderLessonList(id, lessons, emptyText) {
 
 function lessonCard(lesson) {
   const title = escapeHTML(lesson.student || "未命名");
-  const subject = [lesson.subject, lesson.grade, lesson.location].filter(Boolean).join(" · ");
+  const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
+  const location = lesson.location ? `上課地點：${lesson.location}` : "上課地點：未填";
   const meta = [
     subject,
-    hourText(lesson.hours)
+    hourText(lesson.hours),
+    location
   ].filter(Boolean).map(escapeHTML).join("<br>");
 
   return `
