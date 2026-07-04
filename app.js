@@ -7,11 +7,13 @@ const DATA_FILES = {
 const TAIWAN_TIME_ZONE = "Asia/Taipei";
 const ENCRYPTED_DATA_FILE = "data/encrypted-data.json";
 const DATA_PASSWORD = "071314";
+const INCOME_VIEW_PASSWORD = "0713";
 
 const CACHE_KEYS = {
   Lessons: "tutoring.lessons",
   StudentDefaults: "tutoring.studentDefaults",
-  ExternalIncome: "tutoring.externalIncome"
+  ExternalIncome: "tutoring.externalIncome",
+  IncomeUnlocked: "tutoring.incomeUnlocked"
 };
 
 const state = {
@@ -23,7 +25,8 @@ const state = {
   searchText: "",
   scheduleMode: "week",
   scheduleDate: todayInTaiwan(),
-  dataLoaded: false
+  dataLoaded: false,
+  incomeUnlocked: localStorage.getItem(CACHE_KEYS.IncomeUnlocked) === "1"
 };
 
 const dateFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
@@ -52,7 +55,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 function bindEvents() {
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => {
-      state.activeView = tab.dataset.view;
+      const requestedView = tab.dataset.view;
+      if (requestedView === "lessonsView" && !unlockIncomeView()) {
+        return;
+      }
+      state.activeView = requestedView;
       render();
     });
   });
@@ -62,9 +69,9 @@ function bindEvents() {
     render();
   });
 
-  document.getElementById("lessonSearch").addEventListener("input", (event) => {
+  document.getElementById("lessonSearch")?.addEventListener("input", (event) => {
     state.searchText = event.target.value.trim();
-    renderLessons();
+    renderIncomeOverview();
   });
 
   document.querySelectorAll(".schedule-mode").forEach((button) => {
@@ -302,6 +309,13 @@ function lessonsForSelectedMonth() {
     .sort(compareLessons);
 }
 
+function externalIncomeForSelectedMonth() {
+  const { year, month } = selectedMonthParts();
+  return state.externalIncome
+    .filter((income) => income.year === year && income.month === month)
+    .sort((a, b) => a.dateObject - b.dateObject || `${a.category} ${a.title}`.localeCompare(`${b.category} ${b.title}`, "zh-Hant"));
+}
+
 function compareLessons(a, b) {
   const dateDiff = a.dateObject - b.dateObject;
   if (dateDiff !== 0) return dateDiff;
@@ -313,7 +327,7 @@ function render() {
   renderMonthSelect();
   renderDashboard();
   renderSchedule();
-  renderLessons();
+  renderIncomeOverview();
   renderSettings();
 }
 
@@ -321,7 +335,7 @@ function renderTabs() {
   const titles = {
     dashboardView: "首頁",
     scheduleView: "課表",
-    lessonsView: "課程",
+    lessonsView: "近期收入概況",
     settingsView: "設定"
   };
   document.getElementById("pageTitle").textContent = titles[state.activeView] || "家教行事曆";
@@ -518,42 +532,60 @@ function upcomingLessons() {
     .slice(0, 5);
 }
 
-function renderLessons() {
-  const container = document.getElementById("lessonsList");
-  const search = state.searchText;
-  const lessons = lessonsForSelectedMonth().filter((lesson) => {
-    if (!search) return true;
-    const haystack = [
-      lesson.student,
-      lesson.rawStudent,
-      lesson.subject,
-      lesson.grade,
-      lesson.location,
-      lesson.rawEntry
-    ].join(" ");
-    return haystack.toLocaleLowerCase().includes(search.toLocaleLowerCase());
-  });
+function renderIncomeOverview() {
+  const container = document.getElementById("incomeOverview");
+  if (!container) return;
 
-  if (!lessons.length) {
-    container.innerHTML = emptyState("這個月份沒有符合的課程");
+  if (!state.incomeUnlocked) {
+    container.innerHTML = emptyState("請點下方「近期收入」並輸入密碼查看。");
     return;
   }
 
-  const groups = new Map();
-  for (const lesson of lessons) {
-    const key = lesson.dateObject.toISOString().slice(0, 10);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(lesson);
-  }
+  const lessons = lessonsForSelectedMonth();
+  const externalIncome = externalIncomeForSelectedMonth();
+  const lessonIncome = lessons.reduce((sum, lesson) => sum + numeric(lesson.amount), 0);
+  const externalTotal = externalIncome.reduce((sum, income) => sum + numeric(income.amount), 0);
+  const hours = lessons.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
+  const studentRows = studentIncomeRows(lessons);
 
-  container.innerHTML = [...groups.entries()].map(([, groupLessons]) => `
-    <section class="date-group">
-      <h2 class="date-heading">${dateFormatter.format(groupLessons[0].dateObject)}</h2>
-      <div class="lesson-list">
-        ${groupLessons.map(lessonCard).join("")}
+  container.innerHTML = `
+    <div class="metric-grid">
+      <article class="metric metric-total">
+        <span>本月總收入</span>
+        <strong>${money(lessonIncome + externalTotal)}</strong>
+      </article>
+      <article class="metric">
+        <span>家教收入</span>
+        <strong>${money(lessonIncome)}</strong>
+      </article>
+      <article class="metric">
+        <span>外務收入</span>
+        <strong>${money(externalTotal)}</strong>
+      </article>
+      <article class="metric">
+        <span>家教時數</span>
+        <strong>${hourText(hours)}</strong>
+      </article>
+    </div>
+
+    <section class="panel">
+      <div class="section-heading">
+        <h2>學生收入</h2>
+      </div>
+      <div class="income-list">
+        ${studentRows.length ? studentRows.map(studentIncomeCard).join("") : emptyState("這個月份沒有家教收入")}
       </div>
     </section>
-  `).join("");
+
+    <section class="panel">
+      <div class="section-heading">
+        <h2>外務收入</h2>
+      </div>
+      <div class="income-list">
+        ${externalIncome.length ? externalIncome.map(externalIncomeCard).join("") : emptyState("這個月份沒有外務收入")}
+      </div>
+    </section>
+  `;
 }
 
 function renderSettings() {
@@ -590,6 +622,59 @@ function lessonCard(lesson) {
       </div>
     </article>
   `;
+}
+
+function studentIncomeRows(lessons) {
+  const rows = new Map();
+  for (const lesson of lessons) {
+    const name = lesson.student || "未命名";
+    const row = rows.get(name) || { student: name, amount: 0, hours: 0, count: 0 };
+    row.amount += numeric(lesson.amount);
+    row.hours += numeric(lesson.hours);
+    row.count += 1;
+    rows.set(name, row);
+  }
+  return [...rows.values()].sort((a, b) => b.amount - a.amount || a.student.localeCompare(b.student, "zh-Hant"));
+}
+
+function studentIncomeCard(row) {
+  return `
+    <article class="income-row">
+      <div>
+        <strong>${escapeHTML(row.student)}</strong>
+        <span>${row.count} 堂 · ${hourText(row.hours)}</span>
+      </div>
+      <strong>${money(row.amount)}</strong>
+    </article>
+  `;
+}
+
+function externalIncomeCard(income) {
+  const title = income.title || income.category || "外務收入";
+  const subtitle = [income.category, shortDateFormatter.format(income.dateObject)].filter(Boolean).join(" · ");
+  return `
+    <article class="income-row">
+      <div>
+        <strong>${escapeHTML(title)}</strong>
+        <span>${escapeHTML(subtitle)}</span>
+      </div>
+      <strong>${money(income.amount)}</strong>
+    </article>
+  `;
+}
+
+function unlockIncomeView() {
+  if (state.incomeUnlocked) return true;
+  const input = prompt("請輸入近期收入概況密碼");
+  if (input === INCOME_VIEW_PASSWORD) {
+    state.incomeUnlocked = true;
+    localStorage.setItem(CACHE_KEYS.IncomeUnlocked, "1");
+    return true;
+  }
+  if (input !== null) {
+    showStatus("密碼錯誤", true);
+  }
+  return false;
 }
 
 async function importJSONFiles(event) {
@@ -654,6 +739,10 @@ function setText(id, value) {
 function numeric(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
+}
+
+function money(value) {
+  return `$${Math.round(numeric(value)).toLocaleString("zh-Hant-TW")}`;
 }
 
 function hourText(value) {
