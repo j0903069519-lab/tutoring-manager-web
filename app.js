@@ -108,7 +108,7 @@ function bindEvents() {
 
 async function loadAllData({ preferNetwork = false } = {}) {
   try {
-    const encryptedPayload = await loadEncryptedPayload(DATA_PASSWORD, preferNetwork);
+    const encryptedPayload = await tryLoadEncryptedPayload(DATA_PASSWORD, preferNetwork);
     if (encryptedPayload) {
       state.lessons = encryptedPayload.Lessons.map(normalizeLesson);
       state.studentDefaults = encryptedPayload.StudentDefaults;
@@ -130,7 +130,19 @@ async function loadAllData({ preferNetwork = false } = {}) {
   }
 }
 
+async function tryLoadEncryptedPayload(password, preferNetwork) {
+  try {
+    return await loadEncryptedPayload(password, preferNetwork);
+  } catch (error) {
+    console.warn("Encrypted data unavailable, falling back to JSON/cache.", error);
+    return null;
+  }
+}
+
 async function loadEncryptedPayload(password, preferNetwork) {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error("瀏覽器不支援加密資料解密");
+  }
   const url = preferNetwork ? `${ENCRYPTED_DATA_FILE}?v=${Date.now()}` : ENCRYPTED_DATA_FILE;
   const response = await fetch(url, { cache: "no-store" });
   if (response.status === 404) return null;

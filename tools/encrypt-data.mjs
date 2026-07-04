@@ -11,7 +11,8 @@ if (!sourceDir || !outputFile || !password) {
 
 const files = {
   Lessons: "Lessons.json",
-  StudentDefaults: "StudentDefaults.json"
+  StudentDefaults: "StudentDefaults.json",
+  ExternalIncome: "ExternalIncome.json"
 };
 
 const payload = {};
@@ -40,7 +41,8 @@ const output = {
   data: encrypted.toString("base64"),
   counts: {
     lessons: payload.Lessons.length,
-    studentDefaults: payload.StudentDefaults.length
+    studentDefaults: payload.StudentDefaults.length,
+    externalIncome: payload.ExternalIncome.length
   },
   generatedAt: new Date().toISOString()
 };
@@ -48,4 +50,4 @@ const output = {
 await mkdir(dirname(outputFile), { recursive: true });
 await writeFile(outputFile, `${JSON.stringify(output)}\n`, "utf8");
 
-console.log(`Encrypted ${payload.Lessons.length} lessons and ${payload.StudentDefaults.length} student defaults.`);
+console.log(`Encrypted ${payload.Lessons.length} lessons, ${payload.StudentDefaults.length} student defaults, and ${payload.ExternalIncome.length} external incomes.`);
