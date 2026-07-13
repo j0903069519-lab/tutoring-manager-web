@@ -12,8 +12,7 @@ const INCOME_VIEW_PASSWORD = "0713";
 const CACHE_KEYS = {
   Lessons: "tutoring.lessons",
   StudentDefaults: "tutoring.studentDefaults",
-  ExternalIncome: "tutoring.externalIncome",
-  IncomeUnlocked: "tutoring.incomeUnlocked"
+  ExternalIncome: "tutoring.externalIncome"
 };
 
 const state = {
@@ -26,7 +25,7 @@ const state = {
   scheduleMode: "week",
   scheduleDate: todayInTaiwan(),
   dataLoaded: false,
-  incomeUnlocked: localStorage.getItem(CACHE_KEYS.IncomeUnlocked) === "1"
+  incomeUnlocked: false
 };
 
 const dateFormatter = new Intl.DateTimeFormat("zh-Hant-TW", {
@@ -668,7 +667,6 @@ function unlockIncomeView() {
   const input = prompt("請輸入近期收入概況密碼");
   if (input === INCOME_VIEW_PASSWORD) {
     state.incomeUnlocked = true;
-    localStorage.setItem(CACHE_KEYS.IncomeUnlocked, "1");
     return true;
   }
   if (input !== null) {
