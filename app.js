@@ -322,6 +322,10 @@ function compareLessons(a, b) {
   return `${a.startTime} ${a.student}`.localeCompare(`${b.startTime} ${b.student}`, "zh-Hant");
 }
 
+function isSchoolCourse(lesson) {
+  return lesson.sourceFile === "學校課表" || lesson.paymentMethod === "學校課程";
+}
+
 function render() {
   renderTabs();
   renderMonthSelect();
@@ -509,7 +513,7 @@ function scheduleLessonCard(lesson) {
 }
 
 function getSummary() {
-  const lessons = lessonsForSelectedMonth();
+  const lessons = lessonsForSelectedMonth().filter((lesson) => !isSchoolCourse(lesson));
   const hours = lessons.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
   return {
     lessonCount: lessons.length,
@@ -541,7 +545,7 @@ function renderIncomeOverview() {
     return;
   }
 
-  const lessons = lessonsForSelectedMonth();
+  const lessons = lessonsForSelectedMonth().filter((lesson) => !isSchoolCourse(lesson));
   const externalIncome = externalIncomeForSelectedMonth();
   const lessonIncome = lessons.reduce((sum, lesson) => sum + numeric(lesson.amount), 0);
   const externalTotal = externalIncome.reduce((sum, income) => sum + numeric(income.amount), 0);
