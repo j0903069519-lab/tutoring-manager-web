@@ -1,9 +1,9 @@
-const CACHE_NAME = "tutoring-manager-web-v15";
+const CACHE_NAME = "tutoring-manager-web-v16-week-timeline";
 const ASSETS = [
   "./",
   "index.html",
-  "styles.css",
-  "app.js",
+  "styles.css?v=20260718-week-timeline",
+  "app.js?v=20260718-week-timeline",
   "manifest.webmanifest",
   "data/encrypted-data.json",
   "data/Lessons.json",
@@ -12,6 +12,7 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
@@ -21,7 +22,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-    ))
+    )).then(() => self.clients.claim())
   );
 });
 
