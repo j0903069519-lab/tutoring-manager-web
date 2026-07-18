@@ -95,7 +95,7 @@ function bindEvents() {
   });
 
   document.getElementById("scheduleContent").addEventListener("click", (event) => {
-    const dayButton = event.target.closest(".calendar-day");
+    const dayButton = event.target.closest(".calendar-day, .week-day-header[data-date]");
     if (!dayButton) return;
     state.scheduleDate = parseDate(dayButton.dataset.date);
     state.scheduleMode = "day";
@@ -404,15 +404,7 @@ function renderSchedule() {
     return;
   }
 
-  container.innerHTML = weekDays(range.start).map((date) => {
-    const dayLessons = lessons.filter((lesson) => isSameDay(lesson.dateObject, date));
-    return `
-      <section class="schedule-day">
-        <h3>${dateFormatter.format(date)}</h3>
-        ${dayLessons.length ? `<div class="lesson-list">${dayLessons.map(scheduleLessonCard).join("")}</div>` : emptyState("沒有課程")}
-      </section>
-    `;
-  }).join("");
+  renderWeekTimeline(range.start, lessons);
 }
 
 function scheduleRange() {
@@ -472,6 +464,171 @@ function renderMonthSchedule(monthStart) {
       ${days.map((date) => monthDayCell(date, monthStart)).join("")}
     </div>
   `;
+}
+
+function renderWeekTimeline(weekStart, lessons) {
+  const container = document.getElementById("scheduleContent");
+  const days = weekDays(weekStart);
+  const metrics = weekTimelineMetrics(lessons);
+  const timelineHeight = Math.round(metrics.totalMinutes * metrics.pixelsPerMinute);
+  const hourMarkers = timelineHourMarkers(metrics);
+
+  container.innerHTML = `
+    <div class="week-timeline-scroll" aria-label="橫式週課表">
+      <div class="week-timeline" style="--timeline-height: ${timelineHeight}px;">
+        <div class="week-time-axis">
+          <div class="week-day-header time-header">時間</div>
+          <div class="week-time-body">
+            ${hourMarkers.map((minute) => `
+              <div class="week-time-label" style="top: ${weekTimelineTop(minute, metrics)}px;">${String(Math.floor(minute / 60)).padStart(2, "0")}</div>
+            `).join("")}
+          </div>
+        </div>
+        <div class="week-days-grid">
+          ${days.map((date) => weekTimelineDay(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)), metrics)).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function weekTimelineDay(date, dayLessons, metrics) {
+  const isToday = isSameDay(date, todayInTaiwan());
+  const placements = weekTimelinePlacements(dayLessons, metrics);
+  return `
+    <section class="week-day-column ${isToday ? "today" : ""}">
+      <button class="week-day-header" type="button" data-date="${dateKey(date)}">
+        <span>${weekdayFormatter.format(date)}</span>
+        <strong>${shortDateFormatter.format(date)}</strong>
+      </button>
+      <div class="week-day-body">
+        ${timelineHourMarkers(metrics).map((minute) => `
+          <div class="week-hour-line" style="top: ${weekTimelineTop(minute, metrics)}px;"></div>
+        `).join("")}
+        ${placements.map((placement) => weekTimelineLessonBlock(placement)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function weekTimelineLessonBlock(placement) {
+  const lesson = placement.lesson;
+  const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
+  const meta = [subject, hourText(lesson.hours)].filter(Boolean).join(" · ");
+  return `
+    <article class="week-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%;">
+      <strong>${escapeHTML(lesson.startTime)}</strong>
+      <span>${escapeHTML(lesson.student || "未命名")}</span>
+      ${meta ? `<small>${escapeHTML(meta)}</small>` : ""}
+    </article>
+  `;
+}
+
+function weekTimelineMetrics(lessons) {
+  const startMinute = Math.min(8 * 60, ...lessons.map((lesson) => timeToMinutes(lesson.startTime)).filter((minute) => minute !== null));
+  const latestEnd = Math.max(
+    22 * 60 + 30,
+    ...lessons.map((lesson) => {
+      const start = timeToMinutes(lesson.startTime);
+      return start === null ? 0 : start + lessonDurationMinutes(lesson);
+    })
+  );
+  const endMinute = Math.max(startMinute + 60, latestEnd);
+  return {
+    startMinute,
+    endMinute,
+    totalMinutes: endMinute - startMinute,
+    pixelsPerMinute: 0.72,
+    minimumBlockMinutes: 45
+  };
+}
+
+function timelineHourMarkers(metrics) {
+  const firstHour = Math.ceil(metrics.startMinute / 60);
+  const lastHour = Math.floor(metrics.endMinute / 60);
+  return Array.from({ length: lastHour - firstHour + 1 }, (_, index) => (firstHour + index) * 60);
+}
+
+function weekTimelineTop(minute, metrics) {
+  return Math.round((minute - metrics.startMinute) * metrics.pixelsPerMinute);
+}
+
+function weekTimelinePlacements(lessons, metrics) {
+  const intervals = lessons
+    .map((lesson) => {
+      const start = timeToMinutes(lesson.startTime);
+      if (start === null) return null;
+      const duration = Math.max(metrics.minimumBlockMinutes, lessonDurationMinutes(lesson));
+      return {
+        lesson,
+        start,
+        end: start + duration,
+        column: 0,
+        columnCount: 1
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start || String(a.lesson.student).localeCompare(String(b.lesson.student), "zh-Hant"));
+
+  const groups = [];
+  let currentGroup = [];
+  let currentEnd = -Infinity;
+  intervals.forEach((item) => {
+    if (!currentGroup.length || item.start < currentEnd) {
+      currentGroup.push(item);
+      currentEnd = Math.max(currentEnd, item.end);
+      return;
+    }
+    groups.push(currentGroup);
+    currentGroup = [item];
+    currentEnd = item.end;
+  });
+  if (currentGroup.length) groups.push(currentGroup);
+
+  groups.forEach((group) => {
+    const columnEnds = [];
+    group.forEach((item) => {
+      let column = columnEnds.findIndex((end) => end <= item.start);
+      if (column === -1) {
+        column = columnEnds.length;
+        columnEnds.push(item.end);
+      } else {
+        columnEnds[column] = item.end;
+      }
+      item.column = column;
+    });
+    const columnCount = Math.max(1, columnEnds.length);
+    group.forEach((item) => {
+      item.columnCount = columnCount;
+    });
+  });
+
+  return intervals.map((item) => {
+    const gutter = 2;
+    const width = 100 / item.columnCount;
+    return {
+      lesson: item.lesson,
+      top: weekTimelineTop(item.start, metrics),
+      height: Math.max(32, Math.round((item.end - item.start) * metrics.pixelsPerMinute)),
+      left: item.column * width + gutter / 2,
+      width: width - gutter
+    };
+  });
+}
+
+function timeToMinutes(value) {
+  const match = String(value || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+  return hour * 60 + minute;
+}
+
+function lessonDurationMinutes(lesson) {
+  return Math.max(30, Math.round(numeric(lesson.hours) * 60));
 }
 
 function monthDayCell(date, monthStart) {
