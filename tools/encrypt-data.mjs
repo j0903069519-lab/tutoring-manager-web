@@ -9,17 +9,9 @@ if (!sourceDir || !outputFile || !password) {
   process.exit(1);
 }
 
-const files = {
-  Lessons: "Lessons.json",
-  StudentDefaults: "StudentDefaults.json",
-  ExternalIncome: "ExternalIncome.json"
-};
-
-const payload = {};
-for (const [key, fileName] of Object.entries(files)) {
-  const text = await readFile(join(sourceDir, fileName), "utf8");
-  payload[key] = JSON.parse(text);
-}
+const databaseText = await readFile(join(sourceDir, "CourseAssistantDatabase.json"), "utf8");
+const database = JSON.parse(databaseText);
+const payload = { CourseAssistantDatabase: database };
 
 const salt = randomBytes(16);
 const iv = randomBytes(12);
@@ -40,9 +32,9 @@ const output = {
   tag: tag.toString("base64"),
   data: encrypted.toString("base64"),
   counts: {
-    lessons: payload.Lessons.length,
-    studentDefaults: payload.StudentDefaults.length,
-    externalIncome: payload.ExternalIncome.length
+    lessons: database.lessons.length,
+    students: database.students.length,
+    externalIncome: database.externalIncomes.length
   },
   generatedAt: new Date().toISOString()
 };
@@ -50,4 +42,4 @@ const output = {
 await mkdir(dirname(outputFile), { recursive: true });
 await writeFile(outputFile, `${JSON.stringify(output)}\n`, "utf8");
 
-console.log(`Encrypted ${payload.Lessons.length} lessons, ${payload.StudentDefaults.length} student defaults, and ${payload.ExternalIncome.length} external incomes.`);
+console.log(`Encrypted ${database.lessons.length} lessons, ${database.students.length} students, and ${database.externalIncomes.length} external incomes.`);

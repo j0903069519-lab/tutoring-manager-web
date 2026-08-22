@@ -1,14 +1,12 @@
-const CACHE_NAME = "tutoring-manager-web-v16-week-timeline";
+const CACHE_NAME = "tutoring-manager-web-v17-database";
 const ASSETS = [
   "./",
   "index.html",
-  "styles.css?v=20260718-week-timeline",
-  "app.js?v=20260718-week-timeline",
+  "styles.css?v=20260823-database",
+  "app.js?v=20260823-database",
   "manifest.webmanifest",
   "data/encrypted-data.json",
-  "data/Lessons.json",
-  "data/StudentDefaults.json",
-  "data/ExternalIncome.json"
+  "data/CourseAssistantDatabase.json"
 ];
 
 self.addEventListener("install", (event) => {

@@ -1,8 +1,5 @@
-const DATA_FILES = {
-  Lessons: "data/Lessons.json",
-  StudentDefaults: "data/StudentDefaults.json",
-  ExternalIncome: "data/ExternalIncome.json"
-};
+const DATABASE_FILE = "data/CourseAssistantDatabase.json";
+const VISIBLE_MONTH_RANGE = { before: 3, after: 3 };
 
 const TAIWAN_TIME_ZONE = "Asia/Taipei";
 const ENCRYPTED_DATA_FILE = "data/encrypted-data.json";
@@ -10,9 +7,7 @@ const DATA_PASSWORD = "071314";
 const INCOME_VIEW_PASSWORD = "0713";
 
 const CACHE_KEYS = {
-  Lessons: "tutoring.lessons",
-  StudentDefaults: "tutoring.studentDefaults",
-  ExternalIncome: "tutoring.externalIncome",
+  Database: "tutoring.courseAssistantDatabase",
   IncomeUnlocked: "tutoring.incomeUnlocked"
 };
 
@@ -116,22 +111,13 @@ function bindEvents() {
 async function loadAllData({ preferNetwork = false } = {}) {
   try {
     const encryptedPayload = await tryLoadEncryptedPayload(DATA_PASSWORD, preferNetwork);
-    if (encryptedPayload) {
-      state.lessons = encryptedPayload.Lessons.map(normalizeLesson);
-      state.studentDefaults = encryptedPayload.StudentDefaults;
-      state.externalIncome = (encryptedPayload.ExternalIncome || []).map(normalizeExternalIncome);
+    const encryptedDatabase = databaseFromPayload(encryptedPayload);
+    if (encryptedDatabase) {
+      applyDatabase(encryptedDatabase);
       return;
     }
 
-    const [lessons, studentDefaults, externalIncome] = await Promise.all([
-      loadJSON("Lessons", preferNetwork),
-      loadJSON("StudentDefaults", preferNetwork),
-      loadJSON("ExternalIncome", preferNetwork)
-    ]);
-
-    state.lessons = lessons.map(normalizeLesson);
-    state.studentDefaults = studentDefaults;
-    state.externalIncome = externalIncome.map(normalizeExternalIncome);
+    applyDatabase(await loadDatabase(preferNetwork));
   } catch (error) {
     showStatus(`讀取資料失敗：${error.message}`, true);
   }
@@ -141,7 +127,7 @@ async function tryLoadEncryptedPayload(password, preferNetwork) {
   try {
     return await loadEncryptedPayload(password, preferNetwork);
   } catch (error) {
-    console.warn("Encrypted data unavailable, falling back to JSON/cache.", error);
+    console.warn("Encrypted data unavailable, falling back to database JSON/cache.", error);
     return null;
   }
 }
@@ -204,38 +190,115 @@ async function initializeApp() {
   render();
 }
 
-async function loadJSON(name, preferNetwork) {
+async function loadDatabase(preferNetwork) {
   if (!preferNetwork) {
-    const cached = localStorage.getItem(CACHE_KEYS[name]);
+    const cached = localStorage.getItem(CACHE_KEYS.Database);
     if (cached) {
       return JSON.parse(cached);
     }
   }
 
-  const response = await fetch(`${DATA_FILES[name]}?v=${Date.now()}`, { cache: "no-store" });
+  const response = await fetch(`${DATABASE_FILE}?v=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) {
-    throw new Error(`${name}.json HTTP ${response.status}`);
+    throw new Error(`CourseAssistantDatabase.json HTTP ${response.status}`);
   }
   const data = await response.json();
-  localStorage.setItem(CACHE_KEYS[name], JSON.stringify(data));
+  validateDatabase(data);
+  localStorage.setItem(CACHE_KEYS.Database, JSON.stringify(data));
   return data;
 }
 
-function normalizeLesson(lesson) {
+function databaseFromPayload(payload) {
+  if (!payload) return null;
+  if (payload.CourseAssistantDatabase) return payload.CourseAssistantDatabase;
+  if (payload.schemaVersion && Array.isArray(payload.lessons)) return payload;
+  return null;
+}
+
+function applyDatabase(database) {
+  validateDatabase(database);
+  const categoryNames = new Map((database.categoryDefinitions || []).map((category) => [category.id, category.name]));
+  const visibleLessons = (database.lessons || []).filter((lesson) => isVisibleMonth(lesson.localDate));
+  const visibleExternalIncome = (database.externalIncomes || []).filter((income) => isVisibleMonth(income.localDate));
+
+  state.lessons = visibleLessons.map((lesson) => normalizeDatabaseLesson(lesson, categoryNames));
+  state.studentDefaults = (database.students || []).map(normalizeDatabaseStudent);
+  state.externalIncome = visibleExternalIncome.map((income) => normalizeDatabaseExternalIncome(income, categoryNames));
+}
+
+function validateDatabase(data) {
+  if (!data || !Array.isArray(data.lessons) || !Array.isArray(data.students) || !Array.isArray(data.externalIncomes)) {
+    throw new Error("CourseAssistantDatabase.json 缺少新版資料庫欄位");
+  }
+}
+
+function normalizeDatabaseLesson(lesson, categoryNames) {
+  const date = parseDate(lesson.localDate);
+  const categoryName = categoryNames.get(lesson.category) || lesson.category || "";
+  const durationMinutes = numeric(lesson.durationMinutes);
   return {
     ...lesson,
-    dateObject: parseDate(lesson.date),
-    startTime: lesson.startTime || defaultStartTime(lesson.timeSlot),
+    lessonID: lesson.id,
+    date: lesson.localDate,
+    dateObject: date,
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    student: lesson.studentNameSnapshot || lesson.studentID || "",
+    rawStudent: lesson.studentID || "",
+    startTime: lesson.startTime || "",
+    timeSlot: lesson.startTime || "",
+    hours: durationMinutes > 0 ? durationMinutes / 60 : 0,
     grade: lesson.grade || "",
-    paymentMethod: lesson.paymentMethod || ""
+    subject: lesson.subject || categoryName,
+    location: lesson.location || "",
+    amount: numeric(lesson.amount),
+    hourlyRate: numeric(lesson.hourlyRate),
+    paymentMethod: lesson.category === "schoolCourse" ? "學校課程" : billingModeLabel(lesson.billingMode),
+    sourceFile: categoryName || lesson.source || "",
+    categoryName,
+    paymentStatus: lesson.paymentStatus || "",
+    status: lesson.status || ""
   };
 }
 
-function normalizeExternalIncome(income) {
+function normalizeDatabaseStudent(student) {
+  return {
+    ...student,
+    student: student.name || "",
+    subject: student.defaultSubject || "",
+    grade: student.defaultGrade || "",
+    location: student.defaultLocation || "",
+    hours: numeric(student.defaultDurationMinutes) / 60,
+    hourlyRate: numeric(student.defaultHourlyRate),
+    paymentMethod: billingModeLabel(student.defaultBillingMode)
+  };
+}
+
+function normalizeDatabaseExternalIncome(income, categoryNames) {
+  const date = parseDate(income.localDate);
+  const categoryName = categoryNames.get(income.category) || income.category || "";
   return {
     ...income,
-    dateObject: parseDate(income.date)
+    incomeID: income.id,
+    date: income.localDate,
+    dateObject: date,
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    title: income.title || categoryName || "外務收入",
+    category: categoryName,
+    amount: numeric(income.amount)
   };
+}
+
+function billingModeLabel(value) {
+  switch (value) {
+    case "perLesson": return "每堂付款";
+    case "monthly": return "月付款";
+    case "hourly": return "鐘點";
+    case "free": return "不計費";
+    case "other": return "其他";
+    default: return "";
+  }
 }
 
 function parseDate(value) {
@@ -255,11 +318,12 @@ function parseDate(value) {
   return dateInTaiwan(new Date(value));
 }
 
-function defaultStartTime(timeSlot) {
-  if (timeSlot === "早") return "09:00";
-  if (timeSlot === "下午") return "14:00";
-  if (timeSlot === "晚上") return "19:00";
-  return timeSlot || "";
+function isVisibleMonth(value) {
+  const date = parseDate(value);
+  const today = todayInTaiwan();
+  const start = new Date(today.getFullYear(), today.getMonth() - VISIBLE_MONTH_RANGE.before, 1);
+  const end = new Date(today.getFullYear(), today.getMonth() + VISIBLE_MONTH_RANGE.after + 1, 1);
+  return date >= start && date < end;
 }
 
 function setInitialMonth() {
@@ -323,7 +387,7 @@ function compareLessons(a, b) {
 }
 
 function isSchoolCourse(lesson) {
-  return lesson.sourceFile === "學校課表" || lesson.paymentMethod === "學校課程";
+  return lesson.category === "schoolCourse" || lesson.categoryName === "學校課程" || lesson.paymentMethod === "學校課程";
 }
 
 function render() {
@@ -843,14 +907,10 @@ async function importJSONFiles(event) {
   if (!files.length) return;
 
   try {
-    for (const file of files) {
-      const name = file.name.replace(/\.json$/i, "");
-      if (!CACHE_KEYS[name]) continue;
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      validateImportedData(name, parsed);
-      localStorage.setItem(CACHE_KEYS[name], JSON.stringify(parsed));
-    }
+    const file = files.find((candidate) => /CourseAssistantDatabase.*\.json$/i.test(candidate.name)) || files[0];
+    const parsed = JSON.parse(await file.text());
+    validateDatabase(parsed);
+    localStorage.setItem(CACHE_KEYS.Database, JSON.stringify(parsed));
     await loadAllData();
     setInitialMonth();
     showStatus("已匯入並更新資料");
@@ -859,18 +919,6 @@ async function importJSONFiles(event) {
     showStatus(`匯入失敗：${error.message}`, true);
   } finally {
     event.target.value = "";
-  }
-}
-
-function validateImportedData(name, data) {
-  if (!Array.isArray(data)) {
-    throw new Error(`${name}.json 格式必須是陣列`);
-  }
-  if (name === "Lessons" && data.some((item) => !item.lessonID || !item.date)) {
-    throw new Error("Lessons.json 缺少課程欄位");
-  }
-  if (name === "ExternalIncome" && data.some((item) => !item.incomeID || !item.date)) {
-    throw new Error("ExternalIncome.json 缺少必要欄位");
   }
 }
 
