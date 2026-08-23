@@ -519,9 +519,6 @@ function moveSchedulePeriod(direction) {
 function renderMonthSchedule(monthStart) {
   const calendarStart = startOfWeek(monthStart);
   const days = Array.from({ length: 42 }, (_, index) => addDays(calendarStart, index));
-  const monthLessons = state.lessons
-    .filter((lesson) => lesson.dateObject >= monthStart && lesson.dateObject < new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1))
-    .sort(compareLessons);
   const container = document.getElementById("scheduleContent");
   container.innerHTML = `
     <div class="month-board">
@@ -532,7 +529,6 @@ function renderMonthSchedule(monthStart) {
         ${days.map((date) => monthDayCell(date, monthStart)).join("")}
       </div>
     </div>
-    ${monthAgenda(monthLessons)}
   `;
 }
 
@@ -540,7 +536,7 @@ function renderWeekTimeline(weekStart, lessons) {
   const container = document.getElementById("scheduleContent");
   const days = weekDays(weekStart);
   if (isNarrowViewport()) {
-    container.innerHTML = weekAgenda(days, lessons);
+    renderMobileWeekBoard(days, lessons);
     return;
   }
 
@@ -571,51 +567,58 @@ function isNarrowViewport() {
   return window.matchMedia?.("(max-width: 720px)").matches ?? true;
 }
 
-function weekAgenda(days, lessons) {
-  return `
-    <div class="week-strip">
-      ${days.map((date) => weekDayPill(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)))).join("")}
-    </div>
-    <div class="agenda-list">
-      ${days.map((date) => agendaDaySection(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)))).join("")}
+function renderMobileWeekBoard(days, lessons) {
+  const container = document.getElementById("scheduleContent");
+  const metrics = weekTimelineMetrics(lessons);
+  const timelineHeight = Math.round(metrics.totalMinutes * metrics.pixelsPerMinute);
+  const hourMarkers = timelineHourMarkers(metrics);
+  container.innerHTML = `
+    <div class="mobile-week-board" aria-label="手機週課表" style="--timeline-height: ${timelineHeight}px;">
+      <div class="mobile-week-axis">
+        <div class="mobile-axis-header"></div>
+        <div class="mobile-axis-body">
+          ${hourMarkers.map((minute) => `
+            <div class="mobile-axis-label" style="top: ${weekTimelineTop(minute, metrics)}px;">${String(Math.floor(minute / 60)).padStart(2, "0")}</div>
+          `).join("")}
+        </div>
+      </div>
+      ${days.map((date) => mobileWeekDay(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)), metrics, hourMarkers)).join("")}
     </div>
   `;
 }
 
-function weekDayPill(date, dayLessons) {
+function mobileWeekDay(date, dayLessons, metrics, hourMarkers) {
   const isToday = isSameDay(date, todayInTaiwan());
-  const hasLessons = dayLessons.length > 0;
+  const placements = weekTimelinePlacements(dayLessons, metrics);
+  const totalHours = dayLessons.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
   return `
-    <button class="week-pill ${isToday ? "today" : ""} ${hasLessons ? "has-lessons" : ""}" type="button" data-date="${dateKey(date)}">
-      <span>${weekdayFormatter.format(date)}</span>
-      <strong>${date.getDate()}</strong>
-      ${hasLessons ? `<small>${dayLessons.length}</small>` : ""}
-    </button>
-  `;
-}
-
-function monthAgenda(lessons) {
-  if (!lessons.length) return emptyState("這個月沒有課程");
-  const dates = [...new Set(lessons.map((lesson) => dateKey(lesson.dateObject)))].map(parseDate);
-  return `
-    <div class="agenda-list month-agenda">
-      ${dates.map((date) => agendaDaySection(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)))).join("")}
-    </div>
-  `;
-}
-
-function agendaDaySection(date, lessons) {
-  const sorted = lessons.slice().sort(compareLessons);
-  const isToday = isSameDay(date, todayInTaiwan());
-  const totalHours = sorted.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
-  return `
-    <section class="agenda-day ${isToday ? "today" : ""}">
-      <button class="agenda-day-header" type="button" data-date="${dateKey(date)}">
-        <span>${lessonDateLabel(date)}</span>
-        <strong>${sorted.length ? `${sorted.length} 堂 · ${hourText(totalHours)}` : "沒有課"}</strong>
+    <section class="mobile-day-column ${isToday ? "today" : ""}">
+      <button class="mobile-day-header" type="button" data-date="${dateKey(date)}">
+        <span>${weekdayFormatter.format(date)}</span>
+        <strong>${date.getDate()}</strong>
+        <small>${dayLessons.length ? `${dayLessons.length}堂 ${hourText(totalHours)}` : "空"}</small>
       </button>
-      ${sorted.length ? `<div class="agenda-cards">${sorted.map(scheduleLessonCard).join("")}</div>` : ""}
+      <div class="mobile-day-body">
+        ${hourMarkers.map((minute) => `
+          <div class="mobile-hour-line" style="top: ${weekTimelineTop(minute, metrics)}px;">
+            <span>${String(Math.floor(minute / 60)).padStart(2, "0")}</span>
+          </div>
+        `).join("")}
+        ${placements.map((placement) => mobileWeekLessonBlock(placement)).join("")}
+      </div>
     </section>
+  `;
+}
+
+function mobileWeekLessonBlock(placement) {
+  const lesson = placement.lesson;
+  const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
+  return `
+    <article class="mobile-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%;">
+      <strong>${escapeHTML(lesson.startTime)}</strong>
+      <span>${escapeHTML(lesson.student || "未命名")}</span>
+      ${subject ? `<small>${escapeHTML(subject)}</small>` : ""}
+    </article>
   `;
 }
 
