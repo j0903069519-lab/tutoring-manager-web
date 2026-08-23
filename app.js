@@ -9,8 +9,15 @@ const INCOME_VIEW_PASSWORD = "0713";
 const CACHE_KEYS = {
   Database: "tutoring.courseAssistantDatabase",
   IncomeUnlocked: "tutoring.incomeUnlocked",
-  WeekLayout: "tutoring.weekLayout"
+  WeekLayout: "tutoring.weekLayout",
+  WeekLayoutDefaultVersion: "tutoring.weekLayoutDefaultVersion"
 };
+
+const WEEK_LAYOUT_DEFAULT_VERSION = "20260823-vertical";
+if (localStorage.getItem(CACHE_KEYS.WeekLayoutDefaultVersion) !== WEEK_LAYOUT_DEFAULT_VERSION) {
+  localStorage.setItem(CACHE_KEYS.WeekLayout, "vertical");
+  localStorage.setItem(CACHE_KEYS.WeekLayoutDefaultVersion, WEEK_LAYOUT_DEFAULT_VERSION);
+}
 
 const state = {
   lessons: [],
@@ -20,7 +27,7 @@ const state = {
   activeView: "dashboardView",
   searchText: "",
   scheduleMode: "week",
-  weekLayout: localStorage.getItem(CACHE_KEYS.WeekLayout) || "horizontal",
+  weekLayout: localStorage.getItem(CACHE_KEYS.WeekLayout) || "vertical",
   scheduleDate: todayInTaiwan(),
   dataLoaded: false,
   incomeUnlocked: localStorage.getItem(CACHE_KEYS.IncomeUnlocked) === "1"
@@ -450,6 +457,7 @@ function renderSchedule() {
     button.classList.toggle("active", button.dataset.weekLayout === state.weekLayout);
   });
   document.getElementById("weekLayoutToggle").hidden = state.scheduleMode !== "week";
+  document.getElementById("scheduleView").classList.toggle("compact-week", state.scheduleMode === "week" && isNarrowViewport());
 
   const range = scheduleRange();
   const lessons = state.lessons
@@ -587,7 +595,7 @@ function isNarrowViewport() {
 
 function renderMobileWeekBoard(days, lessons) {
   const container = document.getElementById("scheduleContent");
-  const metrics = weekTimelineMetrics(lessons);
+  const metrics = mobileVerticalWeekMetrics(lessons);
   const timelineHeight = Math.round(metrics.totalMinutes * metrics.pixelsPerMinute);
   const hourMarkers = timelineHourMarkers(metrics);
   container.innerHTML = `
@@ -620,6 +628,14 @@ function renderMobileHorizontalWeekBoard(days, lessons) {
       ${days.map((date) => mobileHorizontalDay(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)), metrics, hourMarkers)).join("")}
     </div>
   `;
+}
+
+function mobileVerticalWeekMetrics(lessons) {
+  const base = weekTimelineMetrics(lessons);
+  return {
+    ...base,
+    pixelsPerMinute: 0.31
+  };
 }
 
 function mobileHorizontalDay(date, dayLessons, metrics, hourMarkers) {
@@ -703,13 +719,11 @@ function horizontalWeekPlacements(lessons, metrics) {
 function mobileWeekDay(date, dayLessons, metrics, hourMarkers) {
   const isToday = isSameDay(date, todayInTaiwan());
   const placements = weekTimelinePlacements(dayLessons, metrics);
-  const totalHours = dayLessons.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
   return `
     <section class="mobile-day-column ${isToday ? "today" : ""}">
       <button class="mobile-day-header" type="button" data-date="${dateKey(date)}">
         <span>${weekdayFormatter.format(date)}</span>
         <strong>${date.getDate()}</strong>
-        <small>${dayLessons.length ? `${dayLessons.length}堂 ${hourText(totalHours)}` : "空"}</small>
       </button>
       <div class="mobile-day-body">
         ${hourMarkers.map((minute) => `

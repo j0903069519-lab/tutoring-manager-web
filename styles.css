@@ -835,6 +835,16 @@ select {
   margin-bottom: 12px;
 }
 
+.compact-week .schedule-summary {
+  display: none;
+}
+
+.compact-week .schedule-toolbar,
+.compact-week .week-layout-toggle,
+.compact-week .schedule-nav {
+  margin-bottom: 8px;
+}
+
 .schedule-summary article {
   padding: 11px 10px;
 }
@@ -908,8 +918,8 @@ select {
   align-content: center;
   gap: 2px;
   width: 100%;
-  min-height: 54px;
-  padding: 6px 2px;
+  min-height: 42px;
+  padding: 4px 2px;
   border: 0;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
@@ -925,18 +935,18 @@ select {
 .mobile-day-header span,
 .mobile-day-header small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 850;
 }
 
 .mobile-day-header strong {
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .mobile-axis-header {
-  min-height: 54px;
+  min-height: 42px;
   border-bottom: 1px solid var(--line);
   background: var(--surface-2);
 }
