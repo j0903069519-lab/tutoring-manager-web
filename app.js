@@ -90,7 +90,7 @@ function bindEvents() {
   });
 
   document.getElementById("scheduleContent").addEventListener("click", (event) => {
-    const dayButton = event.target.closest(".calendar-day, .week-day-header[data-date]");
+    const dayButton = event.target.closest(".calendar-day, .week-day-header[data-date], .week-pill[data-date], .agenda-day-header[data-date]");
     if (!dayButton) return;
     state.scheduleDate = parseDate(dayButton.dataset.date);
     state.scheduleMode = "day";
@@ -519,20 +519,31 @@ function moveSchedulePeriod(direction) {
 function renderMonthSchedule(monthStart) {
   const calendarStart = startOfWeek(monthStart);
   const days = Array.from({ length: 42 }, (_, index) => addDays(calendarStart, index));
+  const monthLessons = state.lessons
+    .filter((lesson) => lesson.dateObject >= monthStart && lesson.dateObject < new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1))
+    .sort(compareLessons);
   const container = document.getElementById("scheduleContent");
   container.innerHTML = `
-    <div class="calendar-grid calendar-weekdays">
-      ${["一", "二", "三", "四", "五", "六", "日"].map((day) => `<div>${day}</div>`).join("")}
+    <div class="month-board">
+      <div class="calendar-grid calendar-weekdays">
+        ${["一", "二", "三", "四", "五", "六", "日"].map((day) => `<div>${day}</div>`).join("")}
+      </div>
+      <div class="calendar-grid">
+        ${days.map((date) => monthDayCell(date, monthStart)).join("")}
+      </div>
     </div>
-    <div class="calendar-grid">
-      ${days.map((date) => monthDayCell(date, monthStart)).join("")}
-    </div>
+    ${monthAgenda(monthLessons)}
   `;
 }
 
 function renderWeekTimeline(weekStart, lessons) {
   const container = document.getElementById("scheduleContent");
   const days = weekDays(weekStart);
+  if (isNarrowViewport()) {
+    container.innerHTML = weekAgenda(days, lessons);
+    return;
+  }
+
   const metrics = weekTimelineMetrics(lessons);
   const timelineHeight = Math.round(metrics.totalMinutes * metrics.pixelsPerMinute);
   const hourMarkers = timelineHourMarkers(metrics);
@@ -553,6 +564,58 @@ function renderWeekTimeline(weekStart, lessons) {
         </div>
       </div>
     </div>
+  `;
+}
+
+function isNarrowViewport() {
+  return window.matchMedia?.("(max-width: 720px)").matches ?? true;
+}
+
+function weekAgenda(days, lessons) {
+  return `
+    <div class="week-strip">
+      ${days.map((date) => weekDayPill(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)))).join("")}
+    </div>
+    <div class="agenda-list">
+      ${days.map((date) => agendaDaySection(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)))).join("")}
+    </div>
+  `;
+}
+
+function weekDayPill(date, dayLessons) {
+  const isToday = isSameDay(date, todayInTaiwan());
+  const hasLessons = dayLessons.length > 0;
+  return `
+    <button class="week-pill ${isToday ? "today" : ""} ${hasLessons ? "has-lessons" : ""}" type="button" data-date="${dateKey(date)}">
+      <span>${weekdayFormatter.format(date)}</span>
+      <strong>${date.getDate()}</strong>
+      ${hasLessons ? `<small>${dayLessons.length}</small>` : ""}
+    </button>
+  `;
+}
+
+function monthAgenda(lessons) {
+  if (!lessons.length) return emptyState("這個月沒有課程");
+  const dates = [...new Set(lessons.map((lesson) => dateKey(lesson.dateObject)))].map(parseDate);
+  return `
+    <div class="agenda-list month-agenda">
+      ${dates.map((date) => agendaDaySection(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)))).join("")}
+    </div>
+  `;
+}
+
+function agendaDaySection(date, lessons) {
+  const sorted = lessons.slice().sort(compareLessons);
+  const isToday = isSameDay(date, todayInTaiwan());
+  const totalHours = sorted.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
+  return `
+    <section class="agenda-day ${isToday ? "today" : ""}">
+      <button class="agenda-day-header" type="button" data-date="${dateKey(date)}">
+        <span>${lessonDateLabel(date)}</span>
+        <strong>${sorted.length ? `${sorted.length} 堂 · ${hourText(totalHours)}` : "沒有課"}</strong>
+      </button>
+      ${sorted.length ? `<div class="agenda-cards">${sorted.map(scheduleLessonCard).join("")}</div>` : ""}
+    </section>
   `;
 }
 
@@ -700,11 +763,13 @@ function monthDayCell(date, monthStart) {
   const isOutside = date.getMonth() !== monthStart.getMonth();
   const isToday = isSameDay(date, todayInTaiwan());
   const firstLesson = lessons[0];
+  const visibleLessons = lessons.slice(0, 3);
   return `
     <button class="calendar-day ${isOutside ? "outside" : ""} ${isToday ? "today" : ""}" type="button" data-date="${dateKey(date)}">
       <span>${date.getDate()}</span>
-      ${lessons.length ? `<strong>${lessons.length} 堂</strong>` : ""}
+      ${lessons.length ? `<strong>${lessons.length}</strong>` : ""}
       ${firstLesson ? `<small>${escapeHTML(firstLesson.startTime)} ${escapeHTML(firstLesson.student)}</small>` : ""}
+      ${lessons.length ? `<div class="calendar-dots">${visibleLessons.map((lesson) => `<i title="${escapeHTML(lesson.student)}"></i>`).join("")}</div>` : ""}
     </button>
   `;
 }
