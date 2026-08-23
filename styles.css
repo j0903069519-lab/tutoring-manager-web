@@ -831,6 +831,24 @@ select {
   padding: 12px 10px;
 }
 
+.compact-week .schedule-nav {
+  padding: 6px 8px;
+}
+
+.compact-week .schedule-nav .icon-button {
+  width: 38px;
+  height: 38px;
+  font-size: 22px;
+}
+
+.compact-week .schedule-nav h2 {
+  font-size: 20px;
+}
+
+.compact-week .schedule-nav p {
+  display: none;
+}
+
 .schedule-summary {
   margin-bottom: 12px;
 }
@@ -840,7 +858,6 @@ select {
 }
 
 .compact-week .schedule-toolbar,
-.compact-week .week-layout-toggle,
 .compact-week .schedule-nav {
   margin-bottom: 8px;
 }

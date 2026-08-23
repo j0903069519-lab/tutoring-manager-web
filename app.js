@@ -462,7 +462,8 @@ function renderSchedule() {
   document.querySelectorAll(".week-layout-button").forEach((button) => {
     button.classList.toggle("active", button.dataset.weekLayout === state.weekLayout);
   });
-  document.getElementById("weekLayoutToggle").hidden = state.scheduleMode !== "week";
+  const weekLayoutToggle = document.getElementById("weekLayoutToggle");
+  if (weekLayoutToggle) weekLayoutToggle.hidden = true;
   document.getElementById("scheduleView").classList.toggle("compact-week", state.scheduleMode === "week" && isNarrowViewport());
 
   const range = scheduleRange();
@@ -564,11 +565,7 @@ function renderWeekTimeline(weekStart, lessons) {
   const container = document.getElementById("scheduleContent");
   const days = weekDays(weekStart);
   if (isNarrowViewport()) {
-    if (state.weekLayout === "vertical") {
-      renderMobileWeekBoard(days, lessons);
-    } else {
-      renderMobileHorizontalWeekBoard(days, lessons);
-    }
+    renderMobileWeekBoard(days, lessons);
     return;
   }
 
@@ -654,7 +651,7 @@ function mobileWeekAvailableTimelineHeight() {
   const nav = document.querySelector(".schedule-nav")?.getBoundingClientRect().height || 0;
   const tabbar = document.querySelector(".tabbar")?.getBoundingClientRect().height || 0;
   const dayHeader = 42;
-  const pageGaps = 76;
+  const pageGaps = 42;
   return Math.max(270, viewportHeight - topbar - toolbar - layoutToggle - nav - tabbar - dayHeader - pageGaps);
 }
 
@@ -682,7 +679,7 @@ function mobileHorizontalLessonBlock(placement) {
   return `
     <article class="mobile-horizontal-lesson" style="left: ${placement.left}px; width: ${placement.width}px; top: ${placement.top}px;">
       <strong>${escapeHTML(lesson.startTime)}</strong>
-      <span>${escapeHTML(lesson.student || "未命名")}</span>
+      <span>${escapeHTML(compactStudentName(lesson.student || "未命名"))}</span>
     </article>
   `;
 }
@@ -762,7 +759,7 @@ function mobileWeekLessonBlock(placement) {
   return `
     <article class="mobile-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%;">
       <strong>${escapeHTML(lesson.startTime)}</strong>
-      <span>${escapeHTML(lesson.student || "未命名")}</span>
+      <span>${escapeHTML(compactStudentName(lesson.student || "未命名"))}</span>
     </article>
   `;
 }
@@ -791,7 +788,7 @@ function weekTimelineLessonBlock(placement) {
   return `
     <article class="week-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%;">
       <strong>${escapeHTML(lesson.startTime)}</strong>
-      <span>${escapeHTML(lesson.student || "未命名")}</span>
+      <span>${escapeHTML(compactStudentName(lesson.student || "未命名"))}</span>
     </article>
   `;
 }
@@ -901,6 +898,13 @@ function timeToMinutes(value) {
 
 function lessonDurationMinutes(lesson) {
   return Math.max(30, Math.round(numeric(lesson.hours) * 60));
+}
+
+function compactStudentName(name) {
+  return String(name || "")
+    .replace(/^AT[_\s-]*/, "")
+    .replace(/高一體數學上/g, "高一體")
+    .trim();
 }
 
 function monthDayCell(date, monthStart) {
