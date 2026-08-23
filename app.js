@@ -56,6 +56,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   await initializeApp();
 });
 
+window.addEventListener("resize", () => {
+  if (state.activeView === "scheduleView" && state.scheduleMode === "week") {
+    renderSchedule();
+  }
+});
+
 function bindEvents() {
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -632,10 +638,24 @@ function renderMobileHorizontalWeekBoard(days, lessons) {
 
 function mobileVerticalWeekMetrics(lessons) {
   const base = weekTimelineMetrics(lessons);
+  const availableHeight = mobileWeekAvailableTimelineHeight();
+  const fittedPixelsPerMinute = availableHeight / base.totalMinutes;
   return {
     ...base,
-    pixelsPerMinute: 0.31
+    pixelsPerMinute: Math.max(0.31, Math.min(0.52, fittedPixelsPerMinute))
   };
+}
+
+function mobileWeekAvailableTimelineHeight() {
+  const viewportHeight = window.visualViewport?.height || window.innerHeight || 760;
+  const topbar = document.querySelector(".topbar")?.getBoundingClientRect().height || 0;
+  const toolbar = document.querySelector(".schedule-toolbar")?.getBoundingClientRect().height || 0;
+  const layoutToggle = document.getElementById("weekLayoutToggle")?.getBoundingClientRect().height || 0;
+  const nav = document.querySelector(".schedule-nav")?.getBoundingClientRect().height || 0;
+  const tabbar = document.querySelector(".tabbar")?.getBoundingClientRect().height || 0;
+  const dayHeader = 42;
+  const pageGaps = 76;
+  return Math.max(270, viewportHeight - topbar - toolbar - layoutToggle - nav - tabbar - dayHeader - pageGaps);
 }
 
 function mobileHorizontalDay(date, dayLessons, metrics, hourMarkers) {
