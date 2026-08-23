@@ -265,7 +265,8 @@ main {
 }
 
 .schedule-toolbar,
-.schedule-nav {
+.schedule-nav,
+.week-layout-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -285,7 +286,8 @@ main {
 }
 
 .schedule-mode,
-.small-button {
+.small-button,
+.week-layout-button {
   min-height: 38px;
   border: 0;
   border-radius: 7px;
@@ -298,6 +300,28 @@ main {
   background: var(--surface);
   color: var(--green);
   box-shadow: 0 1px 4px rgba(24, 32, 29, 0.08);
+}
+
+.week-layout-toggle {
+  justify-content: stretch;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.week-layout-toggle[hidden] {
+  display: none;
+}
+
+.week-layout-button {
+  flex: 1;
+}
+
+.week-layout-button.active {
+  background: var(--surface);
+  color: var(--green);
+  box-shadow: 0 2px 8px rgba(23, 29, 26, 0.1);
 }
 
 .small-button {
@@ -744,7 +768,8 @@ select {
 .schedule-nav,
 .schedule-summary article,
 .month-board,
-.mobile-week-board {
+.mobile-week-board,
+.mobile-horizontal-week {
   box-shadow: 0 6px 18px rgba(23, 29, 26, 0.045);
 }
 
@@ -991,6 +1016,130 @@ select {
   color: var(--muted);
   font-size: 8px;
   font-weight: 750;
+}
+
+.mobile-horizontal-week {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.mobile-horizontal-corner {
+  min-height: 28px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.mobile-horizontal-time {
+  position: relative;
+  min-width: 0;
+  height: 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.mobile-horizontal-time span {
+  position: absolute;
+  top: 7px;
+  transform: translateX(-50%);
+  color: rgba(108, 117, 113, 0.82);
+  font-size: 10px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-horizontal-day-label {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  width: 100%;
+  min-height: 46px;
+  padding: 3px 2px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.mobile-horizontal-day-label.today {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.mobile-horizontal-day-label span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.mobile-horizontal-day-label strong {
+  font-size: 16px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-horizontal-day-body {
+  position: relative;
+  min-width: 0;
+  min-height: 46px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.mobile-horizontal-week > :last-child {
+  border-bottom: 0;
+}
+
+.mobile-horizontal-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(108, 117, 113, 0.16);
+}
+
+.mobile-horizontal-lesson {
+  position: absolute;
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  height: 28px;
+  min-width: 0;
+  padding: 3px 4px;
+  overflow: hidden;
+  border: 1px solid rgba(23, 116, 86, 0.34);
+  border-radius: 6px;
+  background: rgba(23, 116, 86, 0.13);
+  color: var(--text);
+}
+
+.mobile-horizontal-lesson strong,
+.mobile-horizontal-lesson span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-horizontal-lesson strong {
+  color: var(--green);
+  font-size: 8px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-horizontal-lesson span {
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.05;
 }
 
 .tabbar {

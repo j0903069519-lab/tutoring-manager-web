@@ -8,7 +8,8 @@ const INCOME_VIEW_PASSWORD = "0713";
 
 const CACHE_KEYS = {
   Database: "tutoring.courseAssistantDatabase",
-  IncomeUnlocked: "tutoring.incomeUnlocked"
+  IncomeUnlocked: "tutoring.incomeUnlocked",
+  WeekLayout: "tutoring.weekLayout"
 };
 
 const state = {
@@ -19,6 +20,7 @@ const state = {
   activeView: "dashboardView",
   searchText: "",
   scheduleMode: "week",
+  weekLayout: localStorage.getItem(CACHE_KEYS.WeekLayout) || "horizontal",
   scheduleDate: todayInTaiwan(),
   dataLoaded: false,
   incomeUnlocked: localStorage.getItem(CACHE_KEYS.IncomeUnlocked) === "1"
@@ -76,6 +78,14 @@ function bindEvents() {
     });
   });
 
+  document.querySelectorAll(".week-layout-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.weekLayout = button.dataset.weekLayout;
+      localStorage.setItem(CACHE_KEYS.WeekLayout, state.weekLayout);
+      renderSchedule();
+    });
+  });
+
   document.getElementById("todayButton").addEventListener("click", () => {
     state.scheduleDate = todayInTaiwan();
     renderSchedule();
@@ -90,7 +100,7 @@ function bindEvents() {
   });
 
   document.getElementById("scheduleContent").addEventListener("click", (event) => {
-    const dayButton = event.target.closest(".calendar-day, .week-day-header[data-date], .week-pill[data-date], .agenda-day-header[data-date]");
+    const dayButton = event.target.closest(".calendar-day, .week-day-header[data-date], .mobile-day-header[data-date], .mobile-horizontal-day-label[data-date]");
     if (!dayButton) return;
     state.scheduleDate = parseDate(dayButton.dataset.date);
     state.scheduleMode = "day";
@@ -436,6 +446,10 @@ function renderSchedule() {
   document.querySelectorAll(".schedule-mode").forEach((button) => {
     button.classList.toggle("active", button.dataset.mode === state.scheduleMode);
   });
+  document.querySelectorAll(".week-layout-button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.weekLayout === state.weekLayout);
+  });
+  document.getElementById("weekLayoutToggle").hidden = state.scheduleMode !== "week";
 
   const range = scheduleRange();
   const lessons = state.lessons
@@ -536,7 +550,11 @@ function renderWeekTimeline(weekStart, lessons) {
   const container = document.getElementById("scheduleContent");
   const days = weekDays(weekStart);
   if (isNarrowViewport()) {
-    renderMobileWeekBoard(days, lessons);
+    if (state.weekLayout === "vertical") {
+      renderMobileWeekBoard(days, lessons);
+    } else {
+      renderMobileHorizontalWeekBoard(days, lessons);
+    }
     return;
   }
 
@@ -587,6 +605,101 @@ function renderMobileWeekBoard(days, lessons) {
   `;
 }
 
+function renderMobileHorizontalWeekBoard(days, lessons) {
+  const container = document.getElementById("scheduleContent");
+  const metrics = horizontalWeekMetrics(lessons);
+  const hourMarkers = timelineHourMarkers(metrics);
+  container.innerHTML = `
+    <div class="mobile-horizontal-week" aria-label="手機橫式週課表" style="--timeline-width: ${metrics.timelineWidth}px;">
+      <div class="mobile-horizontal-corner"></div>
+      <div class="mobile-horizontal-time">
+        ${hourMarkers.map((minute) => `
+          <span style="left: ${horizontalWeekLeft(minute, metrics)}px;">${String(Math.floor(minute / 60)).padStart(2, "0")}</span>
+        `).join("")}
+      </div>
+      ${days.map((date) => mobileHorizontalDay(date, lessons.filter((lesson) => isSameDay(lesson.dateObject, date)), metrics, hourMarkers)).join("")}
+    </div>
+  `;
+}
+
+function mobileHorizontalDay(date, dayLessons, metrics, hourMarkers) {
+  const isToday = isSameDay(date, todayInTaiwan());
+  const placements = horizontalWeekPlacements(dayLessons, metrics);
+  const laneCount = Math.max(1, ...placements.map((placement) => placement.lane + 1));
+  const rowHeight = 46 + (laneCount - 1) * 32;
+  return `
+    <button class="mobile-horizontal-day-label ${isToday ? "today" : ""}" type="button" data-date="${dateKey(date)}" style="height: ${rowHeight}px;">
+      <span>${weekdayFormatter.format(date)}</span>
+      <strong>${date.getDate()}</strong>
+    </button>
+    <div class="mobile-horizontal-day-body" style="height: ${rowHeight}px;">
+      ${hourMarkers.map((minute) => `
+        <div class="mobile-horizontal-line" style="left: ${horizontalWeekLeft(minute, metrics)}px;"></div>
+      `).join("")}
+      ${placements.map((placement) => mobileHorizontalLessonBlock(placement)).join("")}
+    </div>
+  `;
+}
+
+function mobileHorizontalLessonBlock(placement) {
+  const lesson = placement.lesson;
+  return `
+    <article class="mobile-horizontal-lesson" style="left: ${placement.left}px; width: ${placement.width}px; top: ${placement.top}px;">
+      <strong>${escapeHTML(lesson.startTime)}</strong>
+      <span>${escapeHTML(lesson.student || "未命名")}</span>
+    </article>
+  `;
+}
+
+function horizontalWeekMetrics(lessons) {
+  const base = weekTimelineMetrics(lessons);
+  return {
+    ...base,
+    pixelsPerMinute: 0.31,
+    timelineWidth: Math.round(base.totalMinutes * 0.31)
+  };
+}
+
+function horizontalWeekLeft(minute, metrics) {
+  return Math.round((minute - metrics.startMinute) * metrics.pixelsPerMinute);
+}
+
+function horizontalWeekPlacements(lessons, metrics) {
+  const intervals = lessons
+    .map((lesson) => {
+      const start = timeToMinutes(lesson.startTime);
+      if (start === null) return null;
+      return {
+        lesson,
+        start,
+        end: start + Math.max(45, lessonDurationMinutes(lesson)),
+        lane: 0
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start || String(a.lesson.student).localeCompare(String(b.lesson.student), "zh-Hant"));
+
+  const laneEnds = [];
+  intervals.forEach((item) => {
+    let lane = laneEnds.findIndex((end) => end <= item.start);
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(item.end);
+    } else {
+      laneEnds[lane] = item.end;
+    }
+    item.lane = lane;
+  });
+
+  return intervals.map((item) => ({
+    lesson: item.lesson,
+    lane: item.lane,
+    left: horizontalWeekLeft(item.start, metrics),
+    width: Math.max(34, Math.round((item.end - item.start) * metrics.pixelsPerMinute)),
+    top: 7 + item.lane * 32
+  }));
+}
+
 function mobileWeekDay(date, dayLessons, metrics, hourMarkers) {
   const isToday = isSameDay(date, todayInTaiwan());
   const placements = weekTimelinePlacements(dayLessons, metrics);
@@ -612,12 +725,10 @@ function mobileWeekDay(date, dayLessons, metrics, hourMarkers) {
 
 function mobileWeekLessonBlock(placement) {
   const lesson = placement.lesson;
-  const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
   return `
     <article class="mobile-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%;">
       <strong>${escapeHTML(lesson.startTime)}</strong>
       <span>${escapeHTML(lesson.student || "未命名")}</span>
-      ${subject ? `<small>${escapeHTML(subject)}</small>` : ""}
     </article>
   `;
 }
@@ -643,13 +754,10 @@ function weekTimelineDay(date, dayLessons, metrics) {
 
 function weekTimelineLessonBlock(placement) {
   const lesson = placement.lesson;
-  const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
-  const meta = [subject, hourText(lesson.hours)].filter(Boolean).join(" · ");
   return `
     <article class="week-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%;">
       <strong>${escapeHTML(lesson.startTime)}</strong>
       <span>${escapeHTML(lesson.student || "未命名")}</span>
-      ${meta ? `<small>${escapeHTML(meta)}</small>` : ""}
     </article>
   `;
 }
