@@ -1,9 +1,9 @@
-const CACHE_NAME = "tutoring-manager-web-v17-database";
+const CACHE_NAME = "tutoring-manager-web-v18-cache-refresh";
 const ASSETS = [
   "./",
   "index.html",
-  "styles.css?v=20260823-database",
-  "app.js?v=20260823-database",
+  "styles.css?v=20260825-cache-refresh",
+  "app.js?v=20260825-cache-refresh",
   "manifest.webmanifest",
   "data/encrypted-data.json",
   "data/CourseAssistantDatabase.json"
