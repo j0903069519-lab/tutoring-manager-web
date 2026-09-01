@@ -1,9 +1,9 @@
-const CACHE_NAME = "tutoring-manager-web-v19-schedule-maclike";
+const CACHE_NAME = "tutoring-manager-web-v20-tutoring-hours";
 const ASSETS = [
   "./",
   "index.html",
-  "styles.css?v=20260902-schedule-maclike",
-  "app.js?v=20260902-schedule-maclike",
+  "styles.css?v=20260902-tutoring-hours",
+  "app.js?v=20260902-tutoring-hours",
   "manifest.webmanifest",
   "data/encrypted-data.json",
   "data/CourseAssistantDatabase.json",

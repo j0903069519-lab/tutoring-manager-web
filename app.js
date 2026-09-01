@@ -509,14 +509,15 @@ function renderSchedule() {
   const lessons = state.lessons
     .filter((lesson) => lesson.dateObject >= range.start && lesson.dateObject < range.end)
     .sort(compareLessons);
-  const totalHours = lessons.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
-  const lessonDays = new Set(lessons.map((lesson) => dateKey(lesson.dateObject))).size;
+  const tutoringLessons = lessons.filter((lesson) => !isSchoolCourse(lesson));
+  const totalHours = tutoringLessons.reduce((sum, lesson) => sum + numeric(lesson.hours), 0);
+  const lessonDays = new Set(tutoringLessons.map((lesson) => dateKey(lesson.dateObject))).size;
 
   setText("scheduleTitle", range.title);
   setText("scheduleSubtitle", range.subtitle);
   document.getElementById("scheduleSummary").innerHTML = `
-    <article><strong>${lessons.length}</strong><span>堂課</span></article>
-    <article><strong>${hourText(totalHours)}</strong><span>總時數</span></article>
+    <article><strong>${tutoringLessons.length}</strong><span>家教堂數</span></article>
+    <article><strong>${hourText(totalHours)}</strong><span>家教時數</span></article>
     <article><strong>${lessonDays}</strong><span>上課日</span></article>
   `;
 
