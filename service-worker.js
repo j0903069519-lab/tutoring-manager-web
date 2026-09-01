@@ -1,12 +1,13 @@
-const CACHE_NAME = "tutoring-manager-web-v18-cache-refresh";
+const CACHE_NAME = "tutoring-manager-web-v19-schedule-maclike";
 const ASSETS = [
   "./",
   "index.html",
-  "styles.css?v=20260825-cache-refresh",
-  "app.js?v=20260825-cache-refresh",
+  "styles.css?v=20260902-schedule-maclike",
+  "app.js?v=20260902-schedule-maclike",
   "manifest.webmanifest",
   "data/encrypted-data.json",
-  "data/CourseAssistantDatabase.json"
+  "data/CourseAssistantDatabase.json",
+  "data/PersonalCalendarEvents.json"
 ];
 
 self.addEventListener("install", (event) => {

@@ -181,6 +181,10 @@ main {
   grid-template-columns: 72px minmax(0, 1fr);
   gap: 10px;
   padding: 12px;
+  border: 1px solid var(--lesson-color, var(--green));
+  border-color: color-mix(in srgb, var(--lesson-color, var(--green)) 55%, var(--line));
+  background: var(--lesson-soft, #fbfcfa);
+  box-shadow: inset 4px 0 0 var(--lesson-color, var(--green));
 }
 
 .income-row {
@@ -401,7 +405,7 @@ main {
 }
 
 .schedule-card {
-  background: #fbfcfa;
+  background: var(--lesson-soft, #fbfcfa);
 }
 
 .week-timeline-scroll {
@@ -507,10 +511,12 @@ main {
   min-width: 0;
   padding: 5px 6px;
   overflow: hidden;
-  border: 1px solid rgba(31, 123, 100, 0.34);
+  border: 1px solid var(--lesson-color, var(--green));
+  border-color: color-mix(in srgb, var(--lesson-color, var(--green)) 72%, transparent);
   border-radius: 7px;
-  background: rgba(31, 123, 100, 0.12);
+  background: var(--lesson-soft, rgba(31, 123, 100, 0.12));
   color: var(--text);
+  box-shadow: inset 3px 0 0 var(--lesson-color, var(--green));
 }
 
 .week-lesson-block strong,
@@ -523,7 +529,7 @@ main {
 }
 
 .week-lesson-block strong {
-  color: var(--green);
+  color: var(--lesson-color, var(--green));
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
@@ -555,10 +561,11 @@ main {
 
 .calendar-day {
   display: grid;
-  align-content: start;
-  gap: 3px;
-  min-height: 82px;
-  padding: 7px 5px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-content: stretch;
+  gap: 4px;
+  min-height: 92px;
+  padding: 5px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -566,30 +573,80 @@ main {
   text-align: left;
 }
 
-.calendar-day span {
+.calendar-day-side {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.calendar-day-side span {
   font-size: 12px;
   font-weight: 850;
 }
 
-.calendar-day strong,
-.calendar-day small {
-  overflow: hidden;
-  text-overflow: ellipsis;
+.calendar-day-body {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
 }
 
-.calendar-day strong {
-  color: var(--green);
-  font-size: 11px;
+.calendar-day-body small {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.month-lesson-pill {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 18px;
+  padding: 2px 4px;
+  overflow: hidden;
+  border: 1px solid var(--lesson-color, var(--green));
+  border-color: color-mix(in srgb, var(--lesson-color, var(--green)) 70%, transparent);
+  border-radius: 5px;
+  background: var(--lesson-soft, rgba(31, 123, 100, 0.12));
+  box-shadow: inset 3px 0 0 var(--lesson-color, var(--green));
+}
+
+.month-lesson-pill strong,
+.month-lesson-pill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.calendar-day small {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.25;
+.month-lesson-pill strong {
+  padding-left: 3px;
+  color: var(--lesson-color, var(--green));
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.month-lesson-pill span {
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.calendar-badge {
+  display: block;
+  width: 18px;
+  padding: 3px 2px;
+  border-radius: 999px;
+  background: var(--badge-color);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 0.94;
+  text-align: center;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
 }
 
 .calendar-day.outside {
@@ -898,19 +955,6 @@ select {
   background: var(--green-soft);
 }
 
-.calendar-dots {
-  display: flex;
-  gap: 3px;
-  margin-top: auto;
-}
-
-.calendar-dots i {
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  background: var(--green);
-}
-
 .mobile-week-board {
   display: grid;
   grid-template-columns: 24px repeat(7, minmax(0, 1fr));
@@ -950,10 +994,24 @@ select {
 }
 
 .mobile-day-header span,
-.mobile-day-header small {
+.mobile-day-header small,
+.mobile-day-header em {
   color: var(--muted);
   font-size: 8px;
   font-weight: 850;
+}
+
+.mobile-day-header em,
+.week-day-header em {
+  max-width: 100%;
+  padding: 1px 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f97316;
+  color: #fff;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobile-day-header strong {
@@ -1012,11 +1070,12 @@ select {
   min-width: 0;
   padding: 4px 3px;
   overflow: hidden;
-  border: 1px solid rgba(23, 116, 86, 0.34);
+  border: 1px solid var(--lesson-color, var(--green));
+  border-color: color-mix(in srgb, var(--lesson-color, var(--green)) 72%, transparent);
   border-radius: 6px;
-  background: rgba(23, 116, 86, 0.13);
+  background: var(--lesson-soft, rgba(23, 116, 86, 0.13));
   color: var(--text);
-  box-shadow: 0 4px 10px rgba(23, 29, 26, 0.06);
+  box-shadow: inset 3px 0 0 var(--lesson-color, var(--green)), 0 4px 10px rgba(23, 29, 26, 0.06);
 }
 
 .mobile-lesson-block strong,
@@ -1029,7 +1088,7 @@ select {
 }
 
 .mobile-lesson-block strong {
-  color: var(--green);
+  color: var(--lesson-color, var(--green));
   font-size: 9px;
   font-variant-numeric: tabular-nums;
 }
@@ -1142,10 +1201,12 @@ select {
   min-width: 0;
   padding: 3px 4px;
   overflow: hidden;
-  border: 1px solid rgba(23, 116, 86, 0.34);
+  border: 1px solid var(--lesson-color, var(--green));
+  border-color: color-mix(in srgb, var(--lesson-color, var(--green)) 72%, transparent);
   border-radius: 6px;
-  background: rgba(23, 116, 86, 0.13);
+  background: var(--lesson-soft, rgba(23, 116, 86, 0.13));
   color: var(--text);
+  box-shadow: inset 3px 0 0 var(--lesson-color, var(--green));
 }
 
 .mobile-horizontal-lesson strong,
@@ -1157,7 +1218,7 @@ select {
 }
 
 .mobile-horizontal-lesson strong {
-  color: var(--green);
+  color: var(--lesson-color, var(--green));
   font-size: 8px;
   line-height: 1;
   font-variant-numeric: tabular-nums;

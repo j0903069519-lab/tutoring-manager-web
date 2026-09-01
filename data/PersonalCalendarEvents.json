@@ -1,0 +1,282 @@
+[
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "0877D7BA-12CA-4704-B326-83264E8F8E48",
+    "isEnabled" : true,
+    "localDate" : "2026-08-31",
+    "note" : "",
+    "title" : "開學",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "712346FC-6ED8-4747-B0A7-ABAB925DD3B2",
+    "isEnabled" : true,
+    "localDate" : "2026-09-02",
+    "note" : "",
+    "title" : "高三模考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "DC8DB10C-B469-4848-8AF5-BACFA6556C5C",
+    "isEnabled" : true,
+    "localDate" : "2026-09-03",
+    "note" : "",
+    "title" : "高三模考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "0E629542-54B0-4CC6-8F77-AC1B3309D2CD",
+    "isEnabled" : true,
+    "localDate" : "2026-09-19",
+    "note" : "",
+    "title" : "家長日",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "738455DE-7B83-4F64-B7D0-3C2B028F86CA",
+    "isEnabled" : true,
+    "localDate" : "2026-09-21",
+    "note" : "",
+    "title" : "家長日補假",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "B02B7D65-7F9B-41D7-B137-1B4FFC1DE293",
+    "isEnabled" : true,
+    "localDate" : "2026-09-22",
+    "note" : "",
+    "title" : "新生健檢",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "49B27D30-2821-439E-8332-EEC7C9BA10D3",
+    "isEnabled" : true,
+    "localDate" : "2026-09-23",
+    "note" : "",
+    "title" : "新生健檢",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "8F25D720-D48F-4E1A-B45D-F452AC5BF9CB",
+    "isEnabled" : true,
+    "localDate" : "2026-09-24",
+    "note" : "",
+    "title" : "新生健檢",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#16A34A",
+    "createdAt" : "2026-09-01T16:37:28Z",
+    "id" : "3BDD706A-36C2-49A1-9514-9C7CD42A20C9",
+    "isEnabled" : true,
+    "localDate" : "2026-09-27",
+    "note" : "",
+    "title" : "烤肉",
+    "updatedAt" : "2026-09-01T16:37:28Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "F6F563F2-8ABF-4271-9016-339F46258DF1",
+    "isEnabled" : true,
+    "localDate" : "2026-10-02",
+    "note" : "",
+    "title" : "作文段考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "AEAF9EB5-5B6E-4D84-B59E-0BA3B7482ED5",
+    "isEnabled" : true,
+    "localDate" : "2026-10-12",
+    "note" : "",
+    "title" : "第一次段考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "3BE29FDA-07EA-4125-9F7E-EF867B8B922D",
+    "isEnabled" : true,
+    "localDate" : "2026-10-13",
+    "note" : "",
+    "title" : "第一次段考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "BFD6A1AF-F3CD-4A17-A470-0CBD2EA383AF",
+    "isEnabled" : true,
+    "localDate" : "2026-10-28",
+    "note" : "",
+    "title" : "高三模考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "793CAA56-4BA7-45A2-84E4-19DD6FFA6971",
+    "isEnabled" : true,
+    "localDate" : "2026-10-29",
+    "note" : "",
+    "title" : "高三模考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "C008A4B3-C532-4B4C-BAF7-4E364AA8F68D",
+    "isEnabled" : true,
+    "localDate" : "2026-11-27",
+    "note" : "",
+    "title" : "作文體育段考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "94C4CF0A-6F3A-4E61-BD3E-412D0E30CF73",
+    "isEnabled" : true,
+    "localDate" : "2026-12-02",
+    "note" : "",
+    "title" : "第二次段考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "04ADF7D6-7A5E-4164-97DF-C804452ED096",
+    "isEnabled" : true,
+    "localDate" : "2026-12-03",
+    "note" : "",
+    "title" : "第二次段考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "E2AF4582-3B4B-43C4-AEFE-AF3B0F245119",
+    "isEnabled" : true,
+    "localDate" : "2026-12-12",
+    "note" : "",
+    "title" : "校慶上課",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "643A020C-AFBF-4E7D-BDCF-2A9DB006B67B",
+    "isEnabled" : true,
+    "localDate" : "2026-12-14",
+    "note" : "",
+    "title" : "校慶補假",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "8960C9D8-B3C5-4BBB-B7CC-F24158297AB4",
+    "isEnabled" : true,
+    "localDate" : "2026-12-30",
+    "note" : "",
+    "title" : "高三期末",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "E78B4192-2B9E-4089-865F-C6533A38AA0F",
+    "isEnabled" : true,
+    "localDate" : "2026-12-31",
+    "note" : "",
+    "title" : "高三期末",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "7F4B1C50-9714-412F-8848-0842478B8CC5",
+    "isEnabled" : true,
+    "localDate" : "2027-01-18",
+    "note" : "",
+    "title" : "高中期末考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "DBBAB9B5-F9A7-4D4D-8E33-46A5844857E8",
+    "isEnabled" : true,
+    "localDate" : "2027-01-19",
+    "note" : "",
+    "title" : "高中期末考",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "414952E5-555B-465D-85F2-B3B41BFD5A18",
+    "isEnabled" : true,
+    "localDate" : "2027-01-20",
+    "note" : "",
+    "title" : "休業式",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "3ECD3494-93B7-4D43-A0F2-0FE50F0E3A23",
+    "isEnabled" : true,
+    "localDate" : "2027-01-21",
+    "note" : "",
+    "title" : "寒假開始",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "3A0D0CB1-0B6A-4BD3-86CE-C6675C03153E",
+    "isEnabled" : true,
+    "localDate" : "2027-01-22",
+    "note" : "",
+    "title" : "學測",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "626E243E-7779-4295-85E0-4B58ABBB9531",
+    "isEnabled" : true,
+    "localDate" : "2027-01-23",
+    "note" : "",
+    "title" : "學測",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  },
+  {
+    "colorHex" : "#A855F7",
+    "createdAt" : "2026-09-01T16:36:42Z",
+    "id" : "C3865B3C-AC14-498B-A069-278E385880C5",
+    "isEnabled" : true,
+    "localDate" : "2027-01-24",
+    "note" : "",
+    "title" : "學測",
+    "updatedAt" : "2026-09-01T16:36:42Z"
+  }
+]

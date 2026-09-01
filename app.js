@@ -1,4 +1,5 @@
 const DATABASE_FILE = "data/CourseAssistantDatabase.json";
+const PERSONAL_CALENDAR_FILE = "data/PersonalCalendarEvents.json";
 const VISIBLE_MONTH_RANGE = { before: 3, after: 3 };
 
 const TAIWAN_TIME_ZONE = "Asia/Taipei";
@@ -23,6 +24,8 @@ const state = {
   lessons: [],
   studentDefaults: [],
   externalIncome: [],
+  categories: [],
+  personalCalendarEvents: [],
   selectedMonth: "",
   activeView: "dashboardView",
   searchText: "",
@@ -134,13 +137,13 @@ function bindEvents() {
 async function loadAllData({ preferNetwork = false } = {}) {
   try {
     const encryptedPayload = await tryLoadEncryptedPayload(DATA_PASSWORD, preferNetwork);
-    const encryptedDatabase = databaseFromPayload(encryptedPayload);
-    if (encryptedDatabase) {
-      applyDatabase(encryptedDatabase);
+    if (encryptedPayload) {
+      applyPayload(encryptedPayload);
       return;
     }
 
     applyDatabase(await loadDatabase(preferNetwork));
+    state.personalCalendarEvents = await loadPersonalCalendarEvents(preferNetwork);
   } catch (error) {
     showStatus(`讀取資料失敗：${error.message}`, true);
   }
@@ -231,16 +234,51 @@ async function loadDatabase(preferNetwork) {
   return data;
 }
 
-function databaseFromPayload(payload) {
-  if (!payload) return null;
-  if (payload.CourseAssistantDatabase) return payload.CourseAssistantDatabase;
-  if (payload.schemaVersion && Array.isArray(payload.lessons)) return payload;
-  return null;
+async function loadPersonalCalendarEvents(preferNetwork) {
+  try {
+    const url = preferNetwork ? `${PERSONAL_CALENDAR_FILE}?v=${Date.now()}` : PERSONAL_CALENDAR_FILE;
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return [];
+    const events = await response.json();
+    return normalizePersonalCalendarEvents(events);
+  } catch {
+    return [];
+  }
+}
+
+function applyPayload(payload) {
+  if (payload.CourseAssistantDatabase) {
+    applyDatabase(payload.CourseAssistantDatabase);
+    state.personalCalendarEvents = normalizePersonalCalendarEvents(payload.PersonalCalendarEvents || []);
+    return;
+  }
+  if (payload.schemaVersion && Array.isArray(payload.lessons)) {
+    applyDatabase(payload);
+    state.personalCalendarEvents = [];
+  }
+}
+
+function normalizePersonalCalendarEvents(events) {
+  return (Array.isArray(events) ? events : [])
+    .filter((event) => event && event.isEnabled !== false && isVisibleMonth(event.localDate))
+    .map((event) => ({
+      id: event.id || `${event.localDate}-${event.title}`,
+      localDate: event.localDate || "",
+      title: event.title || "",
+      colorHex: normalizeHexColor(event.colorHex || "#A855F7")
+    }))
+    .filter((event) => event.localDate && event.title);
 }
 
 function applyDatabase(database) {
   validateDatabase(database);
-  const categoryNames = new Map((database.categoryDefinitions || []).map((category) => [category.id, category.name]));
+  state.categories = (database.categoryDefinitions || []).map((category) => ({
+    id: category.id,
+    name: category.name || category.id,
+    colorHex: category.colorHex || "#2563EB",
+    countsAsIncome: category.countsAsIncome !== false
+  }));
+  const categoryNames = new Map(state.categories.map((category) => [category.id, category.name]));
   const visibleLessons = (database.lessons || []).filter((lesson) => isVisibleMonth(lesson.localDate));
   const visibleExternalIncome = (database.externalIncomes || []).filter((income) => isVisibleMonth(income.localDate));
 
@@ -278,6 +316,7 @@ function normalizeDatabaseLesson(lesson, categoryNames) {
     hourlyRate: numeric(lesson.hourlyRate),
     paymentMethod: lesson.category === "schoolCourse" ? "學校課程" : billingModeLabel(lesson.billingMode),
     sourceFile: categoryName || lesson.source || "",
+    category: lesson.category || "",
     categoryName,
     paymentStatus: lesson.paymentStatus || "",
     status: lesson.status || ""
@@ -676,8 +715,9 @@ function mobileHorizontalDay(date, dayLessons, metrics, hourMarkers) {
 
 function mobileHorizontalLessonBlock(placement) {
   const lesson = placement.lesson;
+  const colors = lessonColors(lesson);
   return `
-    <article class="mobile-horizontal-lesson" style="left: ${placement.left}px; width: ${placement.width}px; top: ${placement.top}px;">
+    <article class="mobile-horizontal-lesson" style="left: ${placement.left}px; width: ${placement.width}px; top: ${placement.top}px; --lesson-color: ${colors.color}; --lesson-soft: ${colors.soft};">
       <strong>${escapeHTML(lesson.startTime)}</strong>
       <span>${escapeHTML(compactStudentName(lesson.student || "未命名"))}</span>
     </article>
@@ -736,11 +776,13 @@ function horizontalWeekPlacements(lessons, metrics) {
 function mobileWeekDay(date, dayLessons, metrics, hourMarkers) {
   const isToday = isSameDay(date, todayInTaiwan());
   const placements = weekTimelinePlacements(dayLessons, metrics);
+  const badges = calendarBadgesForDate(date);
   return `
     <section class="mobile-day-column ${isToday ? "today" : ""}">
       <button class="mobile-day-header" type="button" data-date="${dateKey(date)}">
         <span>${weekdayFormatter.format(date)}</span>
         <strong>${date.getDate()}</strong>
+        ${badges.length ? `<em>${escapeHTML(badges[0].title)}</em>` : ""}
       </button>
       <div class="mobile-day-body">
         ${hourMarkers.map((minute) => `
@@ -756,8 +798,9 @@ function mobileWeekDay(date, dayLessons, metrics, hourMarkers) {
 
 function mobileWeekLessonBlock(placement) {
   const lesson = placement.lesson;
+  const colors = lessonColors(lesson);
   return `
-    <article class="mobile-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%;">
+    <article class="mobile-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%; --lesson-color: ${colors.color}; --lesson-soft: ${colors.soft};">
       <strong>${escapeHTML(lesson.startTime)}</strong>
       <span>${escapeHTML(compactStudentName(lesson.student || "未命名"))}</span>
     </article>
@@ -767,11 +810,13 @@ function mobileWeekLessonBlock(placement) {
 function weekTimelineDay(date, dayLessons, metrics) {
   const isToday = isSameDay(date, todayInTaiwan());
   const placements = weekTimelinePlacements(dayLessons, metrics);
+  const badges = calendarBadgesForDate(date);
   return `
     <section class="week-day-column ${isToday ? "today" : ""}">
       <button class="week-day-header" type="button" data-date="${dateKey(date)}">
         <span>${weekdayFormatter.format(date)}</span>
         <strong>${shortDateFormatter.format(date)}</strong>
+        ${badges.length ? `<em>${escapeHTML(badges[0].title)}</em>` : ""}
       </button>
       <div class="week-day-body">
         ${timelineHourMarkers(metrics).map((minute) => `
@@ -785,8 +830,9 @@ function weekTimelineDay(date, dayLessons, metrics) {
 
 function weekTimelineLessonBlock(placement) {
   const lesson = placement.lesson;
+  const colors = lessonColors(lesson);
   return `
-    <article class="week-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%;">
+    <article class="week-lesson-block" style="top: ${placement.top}px; height: ${placement.height}px; left: ${placement.left}%; width: ${placement.width}%; --lesson-color: ${colors.color}; --lesson-soft: ${colors.soft};">
       <strong>${escapeHTML(lesson.startTime)}</strong>
       <span>${escapeHTML(compactStudentName(lesson.student || "未命名"))}</span>
     </article>
@@ -907,24 +953,115 @@ function compactStudentName(name) {
     .trim();
 }
 
+function lessonColors(lesson) {
+  const category = state.categories.find((item) => item.id === lesson.category);
+  const color = normalizeHexColor(category?.colorHex || fallbackCategoryColor(lesson.category));
+  return {
+    color,
+    soft: hexToRGBA(color, 0.16)
+  };
+}
+
+function fallbackCategoryColor(category) {
+  switch (category) {
+    case "schoolCourse": return "#64748B";
+    case "inPersonTutoring": return "#159A7A";
+    case "onlineAT": return "#7C3AED";
+    case "onlineCourse": return "#2563EB";
+    case "otherWork": return "#B7783C";
+    default: return "#2563EB";
+  }
+}
+
+function normalizeHexColor(value) {
+  const text = String(value || "").trim();
+  return /^#[0-9A-Fa-f]{6}$/.test(text) ? text : "#2563EB";
+}
+
+function hexToRGBA(hex, alpha) {
+  const value = normalizeHexColor(hex).slice(1);
+  const red = parseInt(value.slice(0, 2), 16);
+  const green = parseInt(value.slice(2, 4), 16);
+  const blue = parseInt(value.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function calendarBadgesForDate(date) {
+  const key = dateKey(date);
+  const badges = [];
+  const holiday = holidayLabel(key);
+  if (holiday) badges.push({ title: holiday, color: "#F97316" });
+  state.personalCalendarEvents
+    .filter((event) => event.localDate === key)
+    .forEach((event) => badges.push({ title: event.title, color: event.colorHex }));
+  return badges;
+}
+
+function holidayLabel(key) {
+  return {
+    "2026-01-01": "元旦",
+    "2026-02-15": "小年夜",
+    "2026-02-16": "除夕",
+    "2026-02-17": "初一",
+    "2026-02-18": "初二",
+    "2026-02-19": "初三",
+    "2026-02-20": "春節",
+    "2026-02-21": "初五",
+    "2026-02-27": "228補假",
+    "2026-02-28": "和平紀念日",
+    "2026-04-03": "兒清補假",
+    "2026-04-04": "兒童節",
+    "2026-04-05": "清明節",
+    "2026-04-06": "清明補假",
+    "2026-05-01": "勞動節",
+    "2026-06-19": "端午節",
+    "2026-09-25": "中秋節",
+    "2026-09-28": "教師節",
+    "2026-10-09": "國慶補假",
+    "2026-10-10": "國慶日",
+    "2026-10-25": "光復節",
+    "2026-10-26": "光復補假",
+    "2026-12-25": "行憲紀念日"
+  }[key];
+}
+
 function monthDayCell(date, monthStart) {
   const lessons = state.lessons.filter((lesson) => isSameDay(lesson.dateObject, date)).sort(compareLessons);
   const isOutside = date.getMonth() !== monthStart.getMonth();
   const isToday = isSameDay(date, todayInTaiwan());
-  const firstLesson = lessons[0];
-  const visibleLessons = lessons.slice(0, 3);
+  const visibleLessons = lessons.slice(0, 4);
+  const badges = calendarBadgesForDate(date);
   return `
     <button class="calendar-day ${isOutside ? "outside" : ""} ${isToday ? "today" : ""}" type="button" data-date="${dateKey(date)}">
-      <span>${date.getDate()}</span>
-      ${lessons.length ? `<strong>${lessons.length}</strong>` : ""}
-      ${firstLesson ? `<small>${escapeHTML(firstLesson.startTime)} ${escapeHTML(firstLesson.student)}</small>` : ""}
-      ${lessons.length ? `<div class="calendar-dots">${visibleLessons.map((lesson) => `<i title="${escapeHTML(lesson.student)}"></i>`).join("")}</div>` : ""}
+      <div class="calendar-day-side">
+        <span>${date.getDate()}</span>
+        ${badges.slice(0, 2).map(calendarBadgeHTML).join("")}
+      </div>
+      <div class="calendar-day-body">
+        ${visibleLessons.map(monthLessonPill).join("")}
+        ${lessons.length > visibleLessons.length ? `<small>+${lessons.length - visibleLessons.length}</small>` : ""}
+      </div>
     </button>
   `;
 }
 
+function monthLessonPill(lesson) {
+  const colors = lessonColors(lesson);
+  return `
+    <div class="month-lesson-pill" style="--lesson-color: ${colors.color}; --lesson-soft: ${colors.soft};">
+      <strong>${escapeHTML(lesson.startTime)}</strong>
+      <span>${escapeHTML(compactStudentName(lesson.student || "未命名"))}</span>
+    </div>
+  `;
+}
+
+function calendarBadgeHTML(badge) {
+  return `<b class="calendar-badge" style="--badge-color: ${badge.color};">${escapeHTML(badge.title)}</b>`;
+}
+
 function scheduleLessonCard(lesson) {
   const title = escapeHTML(lesson.student || "未命名");
+  const colors = lessonColors(lesson);
   const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
   const location = lesson.location ? `上課地點：${lesson.location}` : "上課地點：未填";
   const meta = [
@@ -934,7 +1071,7 @@ function scheduleLessonCard(lesson) {
   ].filter(Boolean).map(escapeHTML).join("<br>");
 
   return `
-    <article class="lesson-card schedule-card">
+    <article class="lesson-card schedule-card" style="--lesson-color: ${colors.color}; --lesson-soft: ${colors.soft};">
       <div>
         <div class="lesson-time">${escapeHTML(lesson.startTime)}</div>
         <div class="lesson-weekday">${lessonDateLabel(lesson.dateObject)}</div>
@@ -1041,6 +1178,7 @@ function renderLessonList(id, lessons, emptyText) {
 
 function lessonCard(lesson) {
   const title = escapeHTML(lesson.student || "未命名");
+  const colors = lessonColors(lesson);
   const subject = [lesson.subject, lesson.grade].filter(Boolean).join(" · ");
   const location = lesson.location ? `上課地點：${lesson.location}` : "上課地點：未填";
   const meta = [
@@ -1050,7 +1188,7 @@ function lessonCard(lesson) {
   ].filter(Boolean).map(escapeHTML).join("<br>");
 
   return `
-    <article class="lesson-card">
+    <article class="lesson-card" style="--lesson-color: ${colors.color}; --lesson-soft: ${colors.soft};">
       <div>
         <div class="lesson-time">${escapeHTML(lesson.startTime)}</div>
         <div class="lesson-weekday">${lessonDateLabel(lesson.dateObject)}</div>

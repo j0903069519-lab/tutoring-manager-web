@@ -11,7 +11,12 @@ if (!sourceDir || !outputFile || !password) {
 
 const databaseText = await readFile(join(sourceDir, "CourseAssistantDatabase.json"), "utf8");
 const database = JSON.parse(databaseText);
-const payload = { CourseAssistantDatabase: database };
+let personalCalendarEvents = [];
+try {
+  const personalCalendarText = await readFile(join(sourceDir, "PersonalCalendarEvents.json"), "utf8");
+  personalCalendarEvents = JSON.parse(personalCalendarText);
+} catch {}
+const payload = { CourseAssistantDatabase: database, PersonalCalendarEvents: personalCalendarEvents };
 
 const salt = randomBytes(16);
 const iv = randomBytes(12);
@@ -34,7 +39,8 @@ const output = {
   counts: {
     lessons: database.lessons.length,
     students: database.students.length,
-    externalIncome: database.externalIncomes.length
+    externalIncome: database.externalIncomes.length,
+    personalCalendarEvents: personalCalendarEvents.length
   },
   generatedAt: new Date().toISOString()
 };
