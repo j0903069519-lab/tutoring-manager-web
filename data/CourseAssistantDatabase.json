@@ -57715,7 +57715,7 @@
       "updatedAt" : "2026-08-21T04:50:39Z"
     },
     {
-      "amount" : 800,
+      "amount" : 1200,
       "billingMode" : "monthly",
       "category" : "inPersonTutoring",
       "createdAt" : "2026-08-19T09:03:00Z",
@@ -57729,12 +57729,12 @@
       "note" : "",
       "paymentStatus" : "paid",
       "source" : "seriesExpansion",
-      "startTime" : "14:00",
+      "startTime" : "15:00",
       "status" : "inProgress",
       "studentID" : "20260106",
       "studentNameSnapshot" : "晟弘",
       "subject" : "數學",
-      "updatedAt" : "2026-09-01T16:20:52Z"
+      "updatedAt" : "2026-09-02T14:57:08Z"
     },
     {
       "amount" : 900,
@@ -57891,7 +57891,7 @@
       "updatedAt" : "2026-08-19T09:03:00Z"
     },
     {
-      "amount" : 1600,
+      "amount" : 800,
       "billingMode" : "monthly",
       "category" : "inPersonTutoring",
       "createdAt" : "2026-08-19T09:03:00Z",
@@ -57910,7 +57910,7 @@
       "studentID" : "20260106",
       "studentNameSnapshot" : "晟弘",
       "subject" : "數學",
-      "updatedAt" : "2026-08-30T19:44:01Z"
+      "updatedAt" : "2026-09-02T14:57:08Z"
     },
     {
       "amount" : 0,
